@@ -1,0 +1,11 @@
+node_modules
+logs/
+**/logs/
+# .env
+.vercel
+nn.ts
+dist
+
+
+
+
