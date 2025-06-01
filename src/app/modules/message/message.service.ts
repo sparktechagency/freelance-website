@@ -180,21 +180,28 @@ const createMessages = async (payload: IMessages) => {
   }
 
   if (io) {
+    console.log('socket hit hoise!');
     const senderMessage = 'new-message::' + result.chatId.toString();
+    console.log('senderMessage', senderMessage);
 
     io.emit(senderMessage, result);
 
-    // const ChatListSender = await chatService.getMyChatList(
-    //   result?.sender._id.toString(),
-    // );
-    // const ChatListReceiver = await chatService.getMyChatList(
-    //   result?.receiver._id.toString(),
-    // );
+    const chatListSender = await chatService.getMyChatList(
+      result?.sender._id.toString(),
+    );
+    const chatListReceiver = await chatService.getMyChatList(
+      result?.receiver._id.toString(),
+    );
 
-    // const senderChat = 'chat-list::' + result.sender._id.toString();
-    // const receiverChat = 'chat-list::' + result.receiver._id.toString();
-    // io.emit(receiverChat, ChatListSender);
-    // io.emit(senderChat, ChatListReceiver);
+    console.log('ChatListSender', chatListSender);
+    console.log('ChatListReceiver', chatListReceiver);
+
+    const senderChat = 'chat-list::' + result.sender._id.toString();
+    const receiverChat = 'chat-list::' + result.receiver._id.toString();
+    console.log('senderChat', senderChat);
+    console.log('receiverChat', receiverChat);
+    io.emit(receiverChat, chatListReceiver);
+    io.emit(senderChat, chatListSender);
   }
 
   return result;

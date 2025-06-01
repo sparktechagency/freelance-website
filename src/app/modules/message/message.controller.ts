@@ -38,16 +38,14 @@ const createMessages = catchAsync(async (req, res) => {
   req.body.id = id;
   req.body.sender = req.user.userId;
 
-  // const updateFiles = req.files as {
-  //   [fieldname: string]: Express.Multer.File[];
-  // };
+  const updateFiles = req.files as {
+    [fieldname: string]: Express.Multer.File[];
+  };
  
 
-  //  if (updateFiles.image && updateFiles.image.length > 0) {
-  //    req.body.image = updateFiles.image.map((file) => {
-  //      return file.path.replace(/^public[\\/]/, '');
-  //    });
-  //  }
+  if (updateFiles?.image && updateFiles?.image?.length > 0) {
+    req.body.image = updateFiles?.image[0]?.path?.replace(/^public[\\/]/, '');
+  }
 
    console.log('req.body===ssssss', req.body);
 
