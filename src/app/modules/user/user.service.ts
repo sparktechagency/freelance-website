@@ -73,14 +73,14 @@ const createUserToken = async (payload: TUserCreate) => {
     });
   }
 
-  const otpBody: any = {
-    email,
-    fullName,
-    password,
-    role,
-  };
+  // const otpBody: any = {
+  //   email,
+  //   fullName,
+  //   password,
+  //   role,
+  // };
 
-  console.log({ otpBody });
+  // console.log({ otpBody });
   console.log({ otp });
 
   // send email
@@ -99,7 +99,7 @@ const createUserToken = async (payload: TUserCreate) => {
 
   // crete token
   const createUserToken = createToken({
-    payload: otpBody,
+    payload: payload,
     access_secret: config.jwt_access_secret as string,
     expity_time: config.otp_token_expire_time as string | number,
   });
@@ -126,7 +126,7 @@ const otpVerifyAndCreateUser = async ({
     throw new AppError(httpStatus.BAD_REQUEST, 'You are not authorised');
   }
 
-  const { password, email, fullName, role } = decodeData;
+  const { password, email, fullName, role, ...rest } = decodeData;
 
   const isOtpMatch = await otpServices.otpMatch(email, otp);
 
@@ -155,50 +155,6 @@ const otpVerifyAndCreateUser = async ({
     );
   }
 
-  // const userExist = await User.isUserExist(email as string);
-
-  // // const userExist = await User.findOne({ email: email, role: role });
-
-  // if (userExist) {
-  //   console.log('userExist');
-    
-  //   const passwordEncript = await bcrypt.hash(password, 10);
-
-  //   const user = await User.findOneAndUpdate(
-  //     { email: email },
-  //     { role: role, asRole: asRole, password: passwordEncript },
-  //     {
-  //       new: true,
-  //     },
-  //   );
-
-  //   if (!user) {
-  //     throw new AppError(httpStatus.BAD_REQUEST, 'User creation failed');
-  //   }
-
-  //   const jwtPayload: {
-  //     userId: string;
-  //     role: string;
-  //     fullName: string;
-  //     email: string;
-  //   } = {
-  //     fullName: user?.fullName,
-  //     email: user.email,
-  //     userId: user?._id?.toString() as string,
-  //     role: user?.role,
-  //   };
-
-  //   const userToken = createToken({
-  //     payload: jwtPayload,
-  //     access_secret: config.jwt_access_secret as string,
-  //     expity_time: config.jwt_access_expires_in as string | number,
-  //   });
-
-  //   return { user, userToken };
-
-  // }
-
-
  const userData = {
    password,
    email,
@@ -211,6 +167,63 @@ const otpVerifyAndCreateUser = async ({
   if (!user) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User creation failed');
   }
+
+
+
+  // const jwtPayload: {
+  //   userId: string;
+  //   role: string;
+  //   fullName: string;
+  //   email: string;
+  // } = {
+  //   fullName: user?.fullName,
+  //   email: user.email,
+  //   userId: user?._id?.toString() as string,
+  //   role: user?.role,
+  // };
+
+  // const userToken = createToken({
+  //   payload: jwtPayload,
+  //   access_secret: config.jwt_access_secret as string,
+  //   expity_time: config.jwt_access_expires_in as string | number,
+  // });
+
+  return user;
+};
+
+const creatorUserService = async (
+  payload:any
+) => {
+
+const { role, email, fullName, password, ...rest } = payload;
+
+  if (!(payload.role === USER_ROLE.CREATOR)) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
+  }
+
+  const isExist = await User.isUserExist(payload.email as string);
+
+  if (isExist) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      'User already exists with this email',
+    );
+  }
+
+  const userData = {
+    password: payload.password,
+    email: payload.email,
+    fullName: payload.fullName,
+    role: payload.role
+  };
+
+  const user = await User.create(userData);
+
+  if (!user) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'User creation failed');
+  }
+
+  
 
   // const jwtPayload: {
   //   userId: string;
@@ -485,6 +498,7 @@ const blockedUser = async (id: string) => {
 export const userService = {
   createUserToken,
   otpVerifyAndCreateUser,
+  creatorUserService,
   // userSwichRoleService,
   getUserById,
   getUserByEmail,

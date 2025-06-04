@@ -154,6 +154,25 @@ const addPaymentService = async (payload: any) => {
   // }
 };
 
+
+const createStripeService = async (payload: any) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  try {
+    
+    const result = 'success';
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
+    return result;
+  } catch (error) {
+    console.error('Transaction Error:', error);
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+
 const getAllPaymentService = async (query: Record<string, unknown>) => {
   const PaymentQuery = new QueryBuilder(
     Payment.find({}).populate('userId').populate('orderId'),
@@ -1054,6 +1073,7 @@ const getAllEarningRatio = async (year: number, businessId: string) => {
 
 export const paymentService = {
   addPaymentService,
+  createStripeService,
   getAllPaymentService,
   singlePaymentService,
   deleteSinglePaymentService,

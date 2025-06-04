@@ -66,8 +66,9 @@ const createChat = catchAsync(async (req, res) => {
 });
 
 const getMyChatList = catchAsync(async (req, res) => {
+  const query = req.query;
   const userId = req.user.userId;
-  const result = await chatService.getMyChatList(userId);
+  const result = await chatService.getMyChatList(userId, query);
   sendResponse(res, {
     statusCode: 200,
     success: true,

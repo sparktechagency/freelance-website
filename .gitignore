@@ -5,6 +5,7 @@ logs/
 .vercel
 nn.ts
 dist
+src/script
 
 
 

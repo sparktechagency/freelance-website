@@ -219,15 +219,46 @@ const createChat = async (payload: IChat) => {
 };
 
 // Get my chat list
-const getMyChatList = async (userId: string) => {
-  console.log('*****', userId)
-  const chats = await Chat.find({
-    participants: { $all: userId },
-  }).populate({
-    path: 'participants',
-    select: 'fullName email image role _id phone',
-    match: { _id: { $ne: userId } },
-  });
+const getMyChatList = async (
+  userId: string,
+  query?: Record<string, unknown>,
+) => {
+  console.log('*****', userId);
+  // const chats = await Chat.find({
+  //   participants: { $all: userId },
+  // }).populate({
+  //   path: 'participants',
+  //   select: 'fullName email image role _id phone',
+  //   match: { _id: { $ne: userId } },
+  // });
+
+  let chats;
+  if (query && query.search && query.search !== '') {
+    const searchRegExp = new RegExp('.*' + query.search + '.*', 'i');
+    const matchingUsers = await User.find({ fullName: searchRegExp }).select(
+      '_id',
+    );
+    const matchingUserIds = matchingUsers.map((u) => u._id);
+
+    chats = await Chat.find({
+      $and: [
+        { participants: { $all: [userId] } },
+        { participants: { $in: matchingUserIds } },
+      ],
+    }).populate({
+      path: 'participants',
+      select: 'fullName email image role _id phone',
+      match: { _id: { $ne: userId } },
+    });
+  } else {
+    chats = await Chat.find({
+      participants: { $all: userId },
+    }).populate({
+      path: 'participants',
+      select: 'fullName email image role _id phone',
+      match: { _id: { $ne: userId } },
+    });
+  }
 
   console.log('chats==', chats);
 
@@ -255,36 +286,31 @@ const getMyChatList = async (userId: string) => {
     //   data.push({ chat: chatItem, message: message, unreadMessageCount });
     // }
 
-    const defaultMessage = 
-      {
-        _id: '',
-        text: '',
-        image: '',
-        seen: false,
-        sender: '',
-        receiver: '',
-        chatId: '',
-        createdAt:null,
-        updatedAt: null,
-        __v: ''
-    }
-    
-
+    const defaultMessage = {
+      _id: '',
+      text: '',
+      image: '',
+      seen: false,
+      sender: '',
+      receiver: '',
+      chatId: '',
+      createdAt: null,
+      updatedAt: null,
+      __v: '',
+    };
 
     data.push({
       chat: chatItem,
       message: message ? message : defaultMessage,
       unreadMessageCount: message ? unreadMessageCount : 0,
     });
-  
-   
   }
   data.sort((a, b) => {
     const dateA = (a.message && a.message.createdAt) || 0;
     const dateB = (b.message && b.message.createdAt) || 0;
     return dateB - dateA;
   });
-  console.log('data.length', data.length)
+  console.log('data.length', data.length);
 
   return data.length ? data : chats;
 };
