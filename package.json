@@ -14,7 +14,8 @@
     "lint-prettier": "npm run lint:check && npm run prettier:check",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:prod": "node ./dist/server.js",
-    "prepare": "husky"
+    "prepare": "husky",
+    "create_module": "ts-node-dev src/script/createModule.ts"
   },
   "author": "Md. Sohag Hossain",
   "license": "ISC",
