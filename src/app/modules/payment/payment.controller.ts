@@ -32,6 +32,29 @@ const addPayment = catchAsync(async (req, res, next) => {
   // }
 });
 
+
+const createStripePayment = catchAsync(async (req, res, next) => {
+  const { userId } = req.user;
+  const orderData = req.body;
+  orderData.userId = userId;
+  const result = await paymentService.createStripeService(orderData);
+  if (result) {
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Payment Successfull!!',
+      data: result,
+    });
+  } else {
+    sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: true,
+      message: 'Data is not found',
+      data: {},
+    });
+  }
+});
+
 const getAllPayment = catchAsync(async (req, res, next) => {
   const result = await paymentService.getAllPaymentService(req.query);
   // // console.log('result',result)
@@ -352,6 +375,7 @@ const getAllEarningRasio = catchAsync(async (req, res) => {
 
 export const paymentController = {
   addPayment,
+  createStripePayment,
   getAllPayment,
   getSinglePayment,
   deleteSinglePayment,

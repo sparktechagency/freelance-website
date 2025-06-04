@@ -35,7 +35,7 @@ const faqSchema = new Schema<TPackage>({
     type: Boolean,
     default: false,
   },
-});
+}, { timestamps: true });
 
 const Package = model<TPackage>('Package', faqSchema);
 export default Package;

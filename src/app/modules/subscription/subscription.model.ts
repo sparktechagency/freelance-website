@@ -1,16 +1,20 @@
-// import { model, Schema } from "mongoose";
-// import { TFaq } from "./faq.interface";
+import mongoose from 'mongoose';
 
-// const faqSchema = new Schema<TFaq>({
-//     question:{
-//         type:String,
-//         required:true
-//     },
-//     answer:{
-//         type:String,
-//         required:true
-//     }
-// });
+const subscriptionSchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    subtitle: { type: String, required: true },
+    price: { type: Number, required: true },
+    image: { type: String, required: true },
+    benefits: { type: [String], default: [] },
+    isDeleted: { type: Boolean, default: false },
+    type: { type: String, enum: ['monthly', 'yearly'], default: 'monthly' },
+  },
+  {
+    timestamps: true, 
+  },
+);
 
-// const FAQ = model<TFaq>('FAQ', faqSchema);
-// export default FAQ;
+const Subscription = mongoose.model('Subscription', subscriptionSchema);
+
+module.exports = Subscription;
