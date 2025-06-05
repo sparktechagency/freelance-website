@@ -1,81 +1,91 @@
-// import AppError from '../../error/AppError';
-// import httpStatus from 'http-status';
-// import QueryBuilder from '../../builder/QueryBuilder';
-// import { TFaq } from './faq.interface';
-// import FAQ from './faq.model';
+import AppError from '../../error/AppError';
+import httpStatus from 'http-status';
+import QueryBuilder from '../../builder/QueryBuilder';
+import { TCreator } from './creator.interface';
+import Creator from './creator.model';
+import { uploadManyToS3, uploadToS3 } from '../../utils/s3';
 
-// const createFaq = async (payload: TFaq) => {
-//   console.log('FAQ payload=', payload);
+const createCreator = async (files: any, payload: TCreator) => {
+  console.log('Creator payload=', payload);
 
-//   const result = await FAQ.create(payload);
+  if (!files) {
+    throw new AppError(403, 'At least one File is required');
+  }
 
-//   if (!result) {
-//     throw new AppError(403, 'FAQ create faild!!');
-//   }
+  // aws s3 upload
 
-//   return result;
-// };
+  const introductionVideo = await uploadToS3(files.introductionvideo[0]);
+  const ugcExampleVideo = await uploadManyToS3(files.ugcExampleVideo);
 
-// const getAllFaqQuery = async (query: Record<string, unknown>) => {
-//   const faqQuery = new QueryBuilder(FAQ.find(), query)
-//     .search([])
-//     .filter()
-//     .sort()
-//     .paginate()
-//     .fields();
-
-//   const result = await faqQuery.modelQuery;
-
-//   const meta = await faqQuery.countTotal();
-//   return { meta, result };
-// };
-
-// const getSingleFaqQuery = async (id: string) => {
-//   const faq: any = await FAQ.findById(id);
-//   if (!faq) {
-//     throw new AppError(404, 'Faq Not Found!!');
-//   }
-//   return faq;
-// };
-
-// const updateSingleFaqQuery = async (id: string, payload: any) => {
-//   console.log('id', id);
-//   console.log('updated payload', payload);
-//   const faqProduct: any = await FAQ.findById(id);
-//   if (!faqProduct) {
-//     throw new AppError(404, 'Faq is not found!');
-//   }
-
-//   const result = await FAQ.findByIdAndUpdate(id, payload, { new: true });
+//   const result = await Creator.create(payload);
 
 //   if (!result) {
-//     throw new AppError(403, 'Faq updated faild!!');
+//     throw new AppError(403, 'Creator create faild!!');
 //   }
 
-//   return result;
-// };
+  return 'result';
+};
 
-// const deletedFaqQuery = async (id: string) => {
-//   if (!id) {
-//     throw new AppError(400, 'Invalid input parameters');
-//   }
-//   const faq = await FAQ.findById(id);
-//   if (!faq) {
-//     throw new AppError(404, 'Faq Not Found!!');
-//   }
+const getAllCreatorQuery = async (query: Record<string, unknown>) => {
+  const CreatorQuery = new QueryBuilder(Creator.find(), query)
+    .search([])
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
 
-//   const result = await FAQ.findByIdAndDelete(id);
-//   if (!result) {
-//     throw new AppError(404, 'Faq Result Not Found !');
-//   }
+  const result = await CreatorQuery.modelQuery;
 
-//   return result;
-// };
+  const meta = await CreatorQuery.countTotal();
+  return { meta, result };
+};
 
-// export const faqService = {
-//   createFaq,
-//   getAllFaqQuery,
-//   getSingleFaqQuery,
-//   updateSingleFaqQuery,
-//   deletedFaqQuery,
-// };
+const getSingleCreatorQuery = async (id: string) => {
+  const creator: any = await Creator.findById(id);
+  if (!creator) {
+    throw new AppError(404, 'Creator Not Found!!');
+  }
+  return creator;
+};
+
+const updateSingleCreatorQuery = async (id: string, payload: any) => {
+  console.log('id', id);
+  console.log('updated payload', payload);
+  const creatorProduct: any = await Creator.findById(id);
+  if (!creatorProduct) {
+    throw new AppError(404, 'Creator is not found!');
+  }
+
+  const result = await Creator.findByIdAndUpdate(id, payload, { new: true });
+
+  if (!result) {
+    throw new AppError(403, 'Creator updated faild!!');
+  }
+
+  return result;
+};
+
+const deletedCreatorQuery = async (id: string) => {
+  if (!id) {
+    throw new AppError(400, 'Invalid input parameters');
+  }
+  const creator = await Creator.findById(id);
+  if (!creator) {
+    throw new AppError(404, 'Creator Not Found!!');
+  }
+
+  const result = await Creator.findByIdAndDelete(id);
+  if (!result) {
+    throw new AppError(404, 'Creator Result Not Found !');
+  }
+
+  return result;
+};
+
+export const creatorService = {
+  createCreator,
+  getAllCreatorQuery,
+  getSingleCreatorQuery,
+  updateSingleCreatorQuery,
+  deletedCreatorQuery,
+};

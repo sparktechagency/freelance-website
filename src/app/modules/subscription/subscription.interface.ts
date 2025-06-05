@@ -1,4 +1,4 @@
-export type TFaq = {
+export type TSubscription = {
   title: string;
   subtitle: string;
   price: number;

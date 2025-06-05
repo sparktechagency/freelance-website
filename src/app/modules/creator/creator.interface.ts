@@ -1,4 +1,4 @@
-export type TFaq = {
+export type TCreator = {
   phone: string;
   dateOfBirth: string;
   country: string;
@@ -23,5 +23,12 @@ export type TFaq = {
   portfolioLink: string;
   ugcExampleVideo: string[];
   introductionvideo: string;
+  bankType: string;
+  accountHolderName: string;
+  accountNumber: string;
+  swiftCode: string;
+  bankName: string;
+  iban: string;
+  paypalEmail: string;
 };
  

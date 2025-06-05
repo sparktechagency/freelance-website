@@ -1,16 +1,62 @@
-// import { model, Schema } from "mongoose";
-// import { TFaq } from "./faq.interface";
+import mongoose from 'mongoose';
+const { Schema } = mongoose;
 
-// const faqSchema = new Schema<TFaq>({
-//     question:{
-//         type:String,
-//         required:true
-//     },
-//     answer:{
-//         type:String,
-//         required:true
-//     }
-// });
+const creatorSchema = new Schema(
+  {
+    phone: { type: String, required: true },
+    dateOfBirth: { type: String, required: true },
+    country: { type: String, required: true },
+    state: { type: String, required: true },
+    postalCode: { type: String, required: true },
+    city: { type: String, required: true },
+    street: { type: String, required: true },
+    houseBuildingNo: { type: String, required: true },
+    niche: { type: String, required: true },
+    language: { type: String, required: true },
+    profession: { type: String, required: true },
+    gender: { type: String, required: true },
+    ethnicity: { type: String, required: true },
+    bodyType: { type: String, required: true },
+    hairType: { type: String, required: true },
+    skinType: { type: String, required: true },
+    tiktokHandle: { type: String, required: true },
+    tiktokLink: { type: String, required: true },
+    instragramHandle: { type: String, required: true },
+    instragramLink: { type: String, required: true },
+    othersSocialLink: { type: String, required: true },
+    portfolioLink: { type: String, required: true },
+    ugcExampleVideo: {
+      type: [String],
+      required: [true, 'ugc example video are required'],
+      validate: {
+        validator: function (value: string[]) {
+          return value && value.length > 0;
+        },
+        message: 'At least one File is required',
+      },
+    },
+    introductionvideo: {
+      type: String,
+      required: [true, 'introduction video are required'],
+      validate: {
+        validator: function (value: string[]) {
+          return value && value.length > 0;
+        },
+        message: 'At least one File is required',
+      },
+    },
+    bankType: { type: String, required: true },
+    accountHolderName: { type: String, required: true },
+    accountNumber: { type: String, required: true },
+    swiftCode: { type: String, required: true },
+    bankName: { type: String, required: true },
+    iban: { type: String, required: true },
+    paypalEmail: { type: String, required: true },
+  },
+  { timestamps: true },
+);
 
-// const FAQ = model<TFaq>('FAQ', faqSchema);
-// export default FAQ;
+// Create the model
+const Creator = mongoose.model('Creator', creatorSchema);
+
+export default Creator ;

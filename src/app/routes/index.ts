@@ -16,6 +16,7 @@ import reportRouter from '../modules/report/report.route';
 import creatorRouter from '../modules/creator/creator.route';
 import packageRouter from '../modules/package/package.route';
 import blogRouter from '../modules/blog/blog.route';
+import subcriptionRouter from '../modules/subscription/subscription.route';
 
 const router = Router();
 
@@ -87,6 +88,10 @@ const moduleRoutes = [
   {
     path: '/package',
     route: packageRouter,
+  },
+  {
+    path: '/subscription',
+    route: subcriptionRouter,
   },
   {
     path: '/blog',

@@ -140,7 +140,7 @@ const otpVerifyAndCreateUser = async ({
     });
   });
 
-  if (!(role === USER_ROLE.USER )) {
+  if (!(role === USER_ROLE.USER  || role === USER_ROLE.CREATOR)) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
   }
 
@@ -214,7 +214,7 @@ const { role, email, fullName, password, ...rest } = payload;
     password: payload.password,
     email: payload.email,
     fullName: payload.fullName,
-    role: payload.role
+    role: 'creator',
   };
 
   const user = await User.create(userData);
