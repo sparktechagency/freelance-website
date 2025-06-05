@@ -6,24 +6,33 @@ import Creator from './creator.model';
 import { uploadManyToS3, uploadToS3 } from '../../utils/s3';
 
 const createCreator = async (files: any, payload: TCreator) => {
-  console.log('Creator payload=', payload);
+  try {
+    console.log('Creator payload=', payload);
+    console.log('Creator files=', files);
 
-  if (!files) {
-    throw new AppError(403, 'At least one File is required');
+    if (!files) {
+      throw new AppError(403, 'At least one File is required');
+    }
+
+    // aws s3 upload
+
+    const introductionVideo = await uploadToS3(files.introductionvideo[0]);
+    const ugcExampleVideo = await uploadManyToS3(files.ugcExampleVideo);
+
+    console.log('introductionVideo', introductionVideo);
+    console.log('ugcExampleVideo', ugcExampleVideo);
+
+    //   const result = await Creator.create(payload);
+
+    //   if (!result) {
+    //     throw new AppError(403, 'Creator create faild!!');
+    //   }
+
+    return 'result';
+    
+  } catch (error) {
+    
   }
-
-  // aws s3 upload
-
-  const introductionVideo = await uploadToS3(files.introductionvideo[0]);
-  const ugcExampleVideo = await uploadManyToS3(files.ugcExampleVideo);
-
-//   const result = await Creator.create(payload);
-
-//   if (!result) {
-//     throw new AppError(403, 'Creator create faild!!');
-//   }
-
-  return 'result';
 };
 
 const getAllCreatorQuery = async (query: Record<string, unknown>) => {
