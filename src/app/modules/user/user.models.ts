@@ -6,7 +6,7 @@ import { gender, Role, USER_ROLE } from './user.constants';
 
 const userSchema = new Schema<TUser>(
   {
-    image: {
+    profile: {
       type: String,
       default: '/uploads/profile/default-user.jpg',
     },
@@ -34,7 +34,7 @@ const userSchema = new Schema<TUser>(
       required: false,
       default: '',
     },
-    
+
     isActive: {
       type: Boolean,
       default: true,
@@ -48,8 +48,16 @@ const userSchema = new Schema<TUser>(
       required: false,
       default: '',
     },
-    
-    
+    creatorId: {
+      type: Schema.Types.ObjectId,
+      required: false,
+      ref: 'Creator',
+    },
+    brandId: {
+      type: Schema.Types.ObjectId,
+      required: false,
+      ref: 'Brand',
+    },
   },
   {
     timestamps: true,

@@ -1,9 +1,15 @@
 import mongoose from 'mongoose';
 const { Schema } = mongoose;
 
+const ugcExampleVideo = new Schema({
+  key: { type: String, required: true },
+  url: { type: String, required: true },
+});
+
 const creatorSchema = new Schema(
   {
     phone: { type: String, required: true },
+    email: { type: String, required: true },
     dateOfBirth: { type: String, required: true },
     country: { type: String, required: true },
     state: { type: String, required: true },
@@ -26,7 +32,7 @@ const creatorSchema = new Schema(
     othersSocialLink: { type: String, required: true },
     portfolioLink: { type: String, required: true },
     ugcExampleVideo: {
-      type: [String],
+      type: [ugcExampleVideo],
       required: [true, 'ugc example video are required'],
       validate: {
         validator: function (value: string[]) {

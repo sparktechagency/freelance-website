@@ -9,11 +9,9 @@ const createPackage = catchAsync(async (req, res) => {
   const imageFiles = req.files as {
     [fieldname: string]: Express.Multer.File[];
   };
-  if (imageFiles?.image && imageFiles?.image?.length > 0) {
-    payload.image = imageFiles.image[0].path.replace(/^public[\\/]/, '');
-  }
+ 
 
-  const result = await packageService.createPackage(payload);
+  const result = await packageService.createPackage(imageFiles,payload);
 
   sendResponse(res, {
     success: true,
@@ -53,11 +51,9 @@ const updateSinglePackage = catchAsync(async (req, res) => {
   const imageFiles = req.files as {
     [fieldname: string]: Express.Multer.File[];
   };
-  if (imageFiles?.image && imageFiles?.image?.length > 0) {
-    payload.image = imageFiles.image[0].path.replace(/^public[\\/]/, '');
-  }
+  
 
-  const result = await packageService.updateSinglePackageQuery(id, payload);
+  const result = await packageService.updateSinglePackageQuery(id, imageFiles, payload);
 
   sendResponse(res, {
     success: true,

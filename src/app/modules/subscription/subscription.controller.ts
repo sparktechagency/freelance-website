@@ -5,8 +5,12 @@ import { subscriptionService } from './subscription.service';
 
 const createSubscription = catchAsync(async (req, res) => {
   const payload = req.body;
+  const imageFiles = req.files as {
+    [fieldname: string]: Express.Multer.File[];
+  };
+ 
 
-  const result = await subscriptionService.createSubscription(payload);
+  const result = await subscriptionService.createSubscription(imageFiles, payload);
 
   sendResponse(res, {
     success: true,
@@ -46,9 +50,13 @@ const getSingleSubscription = catchAsync(async (req, res) => {
 const updateSingleSubscription = catchAsync(async (req, res) => {
   const { id } = req.params;
   const payload = req.body;
+  const imageFiles = req.files as {
+    [fieldname: string]: Express.Multer.File[];
+  };
 
   const result = await subscriptionService.updateSingleSubscriptionQuery(
     id,
+    imageFiles,
     payload,
   );
 

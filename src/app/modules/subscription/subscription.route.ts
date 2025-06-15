@@ -25,6 +25,8 @@ subcriptionRouter
   .patch(
     '/:id',
     //  auth(USER_ROLE.ADMIN),
+
+    upload.fields([{ name: 'image', maxCount: 1 }]),
     subscriptionController.updateSingleSubscription,
   )
   .delete(

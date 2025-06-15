@@ -7,7 +7,7 @@ const paymentRouter = express.Router();
 
 paymentRouter
   .post('/add-payment', auth(USER_ROLE.USER), paymentController.addPayment)
-  .post('/create-stripe-payment', auth(USER_ROLE.USER), paymentController.createStripePayment)
+  .post('/create-paypal-payment', auth(USER_ROLE.USER), paymentController.createPaypalPayment)
 
   .get('/success', paymentController.successPage)
   .get('/cancel', paymentController.cancelPage)

@@ -33,11 +33,11 @@ const addPayment = catchAsync(async (req, res, next) => {
 });
 
 
-const createStripePayment = catchAsync(async (req, res, next) => {
+const createPaypalPayment = catchAsync(async (req, res, next) => {
   const { userId } = req.user;
   const orderData = req.body;
   orderData.userId = userId;
-  const result = await paymentService.createStripeService(orderData);
+  const result = await paymentService.createPaypalPaymentService(orderData);
   if (result) {
     sendResponse(res, {
       statusCode: httpStatus.OK,
@@ -375,7 +375,7 @@ const getAllEarningRasio = catchAsync(async (req, res) => {
 
 export const paymentController = {
   addPayment,
-  createStripePayment,
+  createPaypalPayment,
   getAllPayment,
   getSinglePayment,
   deleteSinglePayment,

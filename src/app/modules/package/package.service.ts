@@ -4,17 +4,39 @@ import QueryBuilder from '../../builder/QueryBuilder';
 import { TPackage } from './package.interface';
 import Package from './package.model';
 import { access, unlink } from 'fs/promises';
+import { deleteFromS3, uploadToS3 } from '../../utils/s3';
 
 
-  const createPackage = async (payload: TPackage) => {
+  const createPackage = async (files: any, payload: TPackage) => {
     try {
+       
+        const existingPackage = await Package.findOne({
+          title: payload.title,
+          isDeleted: false
+        });
+        if (existingPackage) {
+          throw new AppError(403, 'Package already exists!!');
+        }
+
+        if (files.image && files.image.length > 0) {
+          const image: any = await uploadToS3({
+            file: files.image[0],
+            fileName: files.image[0].originalname,
+            folder: 'packages/',
+          });
+          payload.image = image;
+        }
       const result = await Package.create(payload);
+
+      if (result) {
+        const fileDeletePath = `${files.image[0].path}`;
+        await unlink(fileDeletePath);
+      }
       return result;
     } catch (error) {
       try {
-        const imagePath = `public/${payload.image}`;
-        await access(imagePath);
-        await unlink(imagePath);
+        const fileDeletePath = `${files.image[0].path}`;
+        await unlink(fileDeletePath);
       } catch (fsError) {
         console.error('Error accessing or deleting the image file:', fsError);
       }
@@ -37,57 +59,65 @@ const getAllPackageQuery = async (query: Record<string, unknown>) => {
 };
 
 const getSinglePackageQuery = async (id: string) => {
-  const PackagePackage: any = await Package.findById(id);
-  if (!PackagePackage) {
-    throw new AppError(404, 'Package Not Found!!');
+  const existingPackage: any = await Package.findOne({
+    _id: id,
+    isDeleted: false,
+  });
+  if (!existingPackage) {
+    throw new AppError(404, 'Package not found!');
   }
-  return PackagePackage;
+  
+  return existingPackage;
 };
 
-const updateSinglePackageQuery = async (id: string, payload: any) => {
+const updateSinglePackageQuery = async (id: string, files:any, payload: any) => {
   try {
     console.log('id', id);
     console.log('updated payload', payload);
 
     // Find existing package by ID
-    const existingPackage: any = await Package.findById(id);
+    const existingPackage: any = await Package.findOne({_id: id, isDeleted: false});
     if (!existingPackage) {
       throw new AppError(404, 'Package not found!');
     }
 
-    // Update package
-    const updatedPackage = await Package.findByIdAndUpdate(id, payload, {
-      new: true,
-    });
-    if (!updatedPackage) {
-      throw new AppError(403, 'Package update failed!');
-    }
+    if (files?.image && files?.image.length > 0) {
+      const image: any = await uploadToS3({
+        file: files.image[0],
+        fileName: files.image[0].originalname,
+        folder: 'packages/',
+      });
+      payload.image = image;
 
-    console.log('result', updatedPackage);
-
-    // Only delete old image if a new image is provided in the payload and it's different
-    if (payload.image && payload.image !== existingPackage.image) {
-      const oldImagePath = `public/${existingPackage.image}`;
-      console.log('Deleting old image at:', oldImagePath);
-
-      try {
-        await access(oldImagePath);
-        await unlink(oldImagePath);
-      } catch (fsError) {
-        console.error('Error accessing or deleting old image file:', fsError);
+      const result = await Package.findByIdAndUpdate(id, payload, {
+        new: true,
+      });
+      if (result) {
+        const fileDeletePath = `${files.image[0].path}`;
+        await unlink(fileDeletePath);
       }
-    }
 
-    return updatedPackage;
+      const key = existingPackage.image.split('amazonaws.com/')[1];
+
+      const deleteImage: any = await deleteFromS3(key);
+      console.log('deleteImage', deleteImage);
+      if (!deleteImage) {
+        throw new AppError(404, 'Blog Image Deleted File !');
+      }
+
+      return result;
+    } else {
+      const result = await Package.findByIdAndUpdate(id, payload, {
+        new: true,
+      });
+      return result;
+    }
   } catch (error) {
-    if (payload.image) {
-      const newImagePath = `public/${payload.image}`;
-      try {
-        await access(newImagePath);
-        await unlink(newImagePath);
-      } catch (fsError) {
-        console.error('Error accessing or deleting new image file:', fsError);
-      }
+    try {
+      const fileDeletePath = `${files.image[0].path}`;
+      await unlink(fileDeletePath);
+    } catch (fsError) {
+      console.error('Error accessing or deleting the image file:', fsError);
     }
     throw error;
   }
@@ -97,10 +127,14 @@ const deletedPackageQuery = async (id: string) => {
   if (!id) {
     throw new AppError(400, 'Invalid input parameters');
   }
-  const packagePackage = await Package.findById(id);
-  if (!packagePackage) {
-    throw new AppError(404, 'Package Not Found!!');
+  const existingPackage: any = await Package.findOne({
+    _id: id,
+    isDeleted: false,
+  });
+  if (!existingPackage) {
+    throw new AppError(404, 'Package not found!');
   }
+ 
 
   const result = await Package.findByIdAndUpdate(id, {isDeleted: true}, {new: true});
   if (!result) {

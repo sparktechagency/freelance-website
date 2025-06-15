@@ -6,11 +6,11 @@ const CLIENT_ID =
 const CLIENT_SECRET =
   'ENvP_VIvVDPDXnII_rZRDTHV5HtS6zWboKUCZiv_PrNF1rP2iuqS_rplComzimYabkOAT81B_g1XuFC7';
 // const BASE_URL = 'https://api-m.sandbox.paypal.com'; // use live endpoint for production
-const BASE_URL = 'https://sandbox.paypal.com'; // use live endpoint for production
+export const BASE_URL = 'https://sandbox.paypal.com'; // use live endpoint for production
 
 
 
-async function getAccessToken() {
+export async function getPaypalAccessToken() {
   const response = await axios.post(
     `${BASE_URL}/v1/oauth2/token`,
     'grant_type=client_credentials',

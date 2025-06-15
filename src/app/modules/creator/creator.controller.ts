@@ -30,6 +30,18 @@ const getAllCreator = catchAsync(async (req, res) => {
   });
 });
 
+const getCreatorMe = catchAsync(async (req, res) => {
+  const {email} = req.user
+  const result  = await creatorService.getCreatorMeQuery(email);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Creator are info successful!!',
+  });
+});
+
 const getSingleCreator = catchAsync(async (req, res) => {
   const result = await creatorService.getSingleCreatorQuery(req.params.id);
 
@@ -69,6 +81,7 @@ const deleteSingleCreator = catchAsync(async (req, res) => {
 export const creatorController = {
   createCreator,
   getAllCreator,
+  getCreatorMe,
   getSingleCreator,
   updateSingleCreator,
   deleteSingleCreator,

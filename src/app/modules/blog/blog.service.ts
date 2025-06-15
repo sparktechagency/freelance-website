@@ -4,16 +4,33 @@ import QueryBuilder from '../../builder/QueryBuilder';
 import { TPackage } from '../package/package.interface';
 import { access, unlink } from 'fs/promises';
 import Blog from './blog.model';
+import { deleteFromS3, uploadToS3 } from '../../utils/s3';
 
-const createBlog = async (payload: TPackage) => {
+const createBlog = async (files: any, payload: TPackage) => {
   try {
+
+
+    if (files.image && files.image.length > 0) {
+      const image: any = await uploadToS3({
+        file: files.image[0],
+        fileName: files.image[0].originalname,
+        folder: 'blogs/',
+      });
+      payload.image = image;
+    }
+
+
     const result = await Blog.create(payload);
+    if (result) {
+      const fileDeletePath = `${files.image[0].path}`;
+      await unlink(fileDeletePath);
+      
+    }
     return result;
   } catch (error) {
     try {
-      const imagePath = `public/${payload.image}`;
-      await access(imagePath);
-      await unlink(imagePath);
+      const fileDeletePath = `${files.image[0].path}`;
+      await unlink(fileDeletePath);
     } catch (fsError) {
       console.error('Error accessing or deleting the image file:', fsError);
     }
@@ -43,7 +60,7 @@ const getSingleBlogQuery = async (id: string) => {
   return blog;
 };
 
-const updateSingleBlogQuery = async (id: string, payload: any) => {
+const updateSingleBlogQuery = async (id: string, files: any, payload: any) => {
   try {
     console.log('id', id);
     console.log('updated payload', payload);
@@ -54,39 +71,48 @@ const updateSingleBlogQuery = async (id: string, payload: any) => {
       throw new AppError(404, 'Package not found!');
     }
 
-    // Update package
-    const updatedPackage = await Blog.findByIdAndUpdate(id, payload, {
-      new: true,
-    });
-    if (!updatedPackage) {
-      throw new AppError(403, 'Package update failed!');
-    }
+    if (files?.image && files?.image.length > 0) {
+      const image: any = await uploadToS3({
+        file: files.image[0],
+        fileName: files.image[0].originalname,
+        folder: 'blogs/',
+      });
+      payload.image = image;
 
-    console.log('result', updatedPackage);
-
-    // Only delete old image if a new image is provided in the payload and it's different
-    if (payload.image && payload.image !== existingPackage.image) {
-      const oldImagePath = `public/${existingPackage.image}`;
-      console.log('Deleting old image at:', oldImagePath);
-
-      try {
-        await access(oldImagePath);
-        await unlink(oldImagePath);
-      } catch (fsError) {
-        console.error('Error accessing or deleting old image file:', fsError);
+      const result = await Blog.findByIdAndUpdate(id, payload, {
+        new: true,
+      });
+      if (result) {
+        const fileDeletePath = `${files.image[0].path}`;
+        await unlink(fileDeletePath);
       }
+
+      const key = existingPackage.image.split('amazonaws.com/')[1];
+
+      const deleteImage: any = await deleteFromS3(key);
+      console.log('deleteImage', deleteImage);
+      if (!deleteImage) {
+        throw new AppError(404, 'Blog Image Deleted File !');
+      }
+
+      return result;
+
+
+    }else{
+
+      const result = await Blog.findByIdAndUpdate(id, payload, {
+        new: true,
+      });
+      return result;
+
     }
 
-    return updatedPackage;
   } catch (error) {
-    if (payload.image) {
-      const newImagePath = `public/${payload.image}`;
-      try {
-        await access(newImagePath);
-        await unlink(newImagePath);
-      } catch (fsError) {
-        console.error('Error accessing or deleting new image file:', fsError);
-      }
+    try {
+      const fileDeletePath = `${files.image[0].path}`;
+      await unlink(fileDeletePath);
+    } catch (fsError) {
+      console.error('Error accessing or deleting the image file:', fsError);
     }
     throw error;
   }
@@ -101,12 +127,21 @@ const deletedBlogQuery = async (id: string) => {
     throw new AppError(404, 'Blog Not Found!!');
   }
 
-  const result = await Blog.findByIdAndDelete(id);
-  if (!result) {
+  console.log('blogs', blog)
+
+  const key = blog.image.split('amazonaws.com/')[1];;
+  console.log('key', key)
+
+  const deleteImage:any = await deleteFromS3(key);
+  console.log('deleteImage', deleteImage)
+  if(deleteImage) {
+    const result =await Blog.findByIdAndDelete(id);
+    return result;
+  }else{
     throw new AppError(404, 'Blog Result Not Found !');
   }
 
-  return result;
+
 };
 
 export const blogService = {

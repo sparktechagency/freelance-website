@@ -155,11 +155,10 @@ const addPaymentService = async (payload: any) => {
 };
 
 
-const createStripeService = async (payload: any) => {
+const createPaypalPaymentService = async (payload: any) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   try {
-    
     const result = 'success';
     // Commit transaction
     await session.commitTransaction();
@@ -1073,7 +1072,7 @@ const getAllEarningRatio = async (year: number, businessId: string) => {
 
 export const paymentService = {
   addPaymentService,
-  createStripeService,
+  createPaypalPaymentService,
   getAllPaymentService,
   singlePaymentService,
   deleteSinglePaymentService,

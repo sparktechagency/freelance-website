@@ -17,6 +17,9 @@ import creatorRouter from '../modules/creator/creator.route';
 import packageRouter from '../modules/package/package.route';
 import blogRouter from '../modules/blog/blog.route';
 import subcriptionRouter from '../modules/subscription/subscription.route';
+import brandRouter from '../modules/brand/brand.route';
+import purchestRouter from '../modules/purchestPackage/purchestPackage.route';
+import uploadVideoRouter from '../modules/uploadVideo/uploadVideo.route';
 
 const router = Router();
 
@@ -86,6 +89,10 @@ const moduleRoutes = [
     route: creatorRouter,
   },
   {
+    path: '/brand',
+    route: brandRouter,
+  },
+  {
     path: '/package',
     route: packageRouter,
   },
@@ -96,6 +103,14 @@ const moduleRoutes = [
   {
     path: '/blog',
     route: blogRouter,
+  },
+  {
+    path: '/purchest',
+    route: purchestRouter,
+  },
+  {
+    path: '/upload-video',
+    route: uploadVideoRouter,
   },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

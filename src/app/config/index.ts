@@ -3,10 +3,10 @@ import path from 'path';
 dotenv.config({ path: path.join((process.cwd(), '.env')) });
 
 const aws = {
-  accessKeyId: process.env.S3_BUCKET_ACCESS_KEY,
-  secretAccessKey: process.env.S3_BUCKET_SECRET_ACCESS_KEY,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_ACCESS_SECRET_KEY,
   region: process.env.AWS_REGION,
-  bucket: process.env.AWS_BUCKET_NAME,
+  bucket: process.env.S3_BUCKET_NAME,
 };
 
 const stripe = {
