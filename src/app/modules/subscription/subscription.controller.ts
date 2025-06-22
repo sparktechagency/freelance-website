@@ -5,12 +5,10 @@ import { subscriptionService } from './subscription.service';
 
 const createSubscription = catchAsync(async (req, res) => {
   const payload = req.body;
-  const imageFiles = req.files as {
-    [fieldname: string]: Express.Multer.File[];
-  };
- 
+ const {userId} = req.user;
+ payload.userId = userId;
 
-  const result = await subscriptionService.createSubscription(imageFiles, payload);
+  const result = await subscriptionService.createSubscription(payload);
 
   sendResponse(res, {
     success: true,
@@ -20,16 +18,19 @@ const createSubscription = catchAsync(async (req, res) => {
   });
 });
 
-const getAllSubscription = catchAsync(async (req, res) => {
-  const { meta, result } = await subscriptionService.getAllsubscriptionQuery(
+const getAllMySubscription = catchAsync(async (req, res) => {
+  const { userId } = req.user;
+  const result:any= await subscriptionService.getAllMysubscriptionQuery(
     req.query,
+    userId,
   );
+  // console.log('result controller' ,result);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    meta: meta,
-    data: result,
+    meta: result?.meta || null,
+    data: result && result.result ? result.result : result,
     message: ' All Subscription are requered successful!!',
   });
 });
@@ -83,7 +84,7 @@ const deleteSingleSubscription = catchAsync(async (req, res) => {
 
 export const subscriptionController = {
   createSubscription,
-  getAllSubscription,
+  getAllMySubscription,
   getSingleSubscription,
   updateSingleSubscription,
   deleteSingleSubscription,

@@ -29,16 +29,16 @@ const paymentSchema = new Schema<TPayment>(
       type: Date,
       default: Date.now,
     },
-    packageId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Package',
-      required: false,
-    },
     subscriptionId: {
       type: Schema.Types.ObjectId,
       ref: 'Subscription',
       required: false,
     },
+    type:{
+      type:String,
+      required:true,
+      default:"regular"
+    }
   },
   { timestamps: true },
 );

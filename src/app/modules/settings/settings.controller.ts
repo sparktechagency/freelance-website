@@ -3,6 +3,7 @@ import sendResponse from '../../utils/sendResponse';
 import { Request, Response } from 'express';
 import { settingsService } from './settings.service';
 import httpStatus from 'http-status';
+import { settingDeleteTemplete, settingPrivacyPolicyTemplete, settingSupportTemplete } from '../../../templete/templete';
 
 const addSetting = catchAsync(async (req, res) => {
   const settingData = {
@@ -34,19 +35,19 @@ const getSettings = catchAsync(
 
 const getPrivacyPolicy = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    res.render('setting.privacyPolicy.ejs');
+    res.send(settingPrivacyPolicyTemplete);
   },
 );
 
 const getAccountDelete = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-     res.render('setting.accountDeletePolicy.ejs');
+     res.send(settingDeleteTemplete);
   },
 );
 
 const getSupport = catchAsync(
   async (req: Request, res: Response): Promise<void> => {
-    res.render('setting.support.ejs');
+    res.send(settingSupportTemplete);
   },
 );
 

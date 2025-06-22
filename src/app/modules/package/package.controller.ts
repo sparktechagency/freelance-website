@@ -33,6 +33,20 @@ const getAllPackage = catchAsync(async (req, res) => {
   });
 });
 
+const getAllSubscriptionPackage = catchAsync(async (req, res) => {
+  const { meta, result } = await packageService.getAllSubscriptionPackageQuery(
+    req.query,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    meta: meta,
+    data: result,
+    message: ' All Package are requered successful!!',
+  });
+});
+
 const getSinglePackage = catchAsync(async (req, res) => {
   const result = await packageService.getSinglePackageQuery(req.params.id);
 
@@ -77,6 +91,7 @@ const deleteSinglePackage = catchAsync(async (req, res) => {
 export const packageController = {
   createPackage,
   getAllPackage,
+  getAllSubscriptionPackage,
   getSinglePackage,
   updateSinglePackage,
   deleteSinglePackage,

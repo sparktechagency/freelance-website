@@ -38,5 +38,6 @@ export default {
   stripe,
   googleApiKey: process.env.GOOGLEAPI,
   shipment_key: process.env.SHIPMENT_KEY,
+  PAYPAL_MODE: process.env.PAYPAL_MODE,
   // user_jwt_token: process.env.USER_JWT_TOKEN,
 };

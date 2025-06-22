@@ -14,6 +14,11 @@ import { Withdraw } from '../withdraw/withdraw.model';
 import cron from 'node-cron';
 import { notificationService } from '../notification/notification.service';
 import axios from 'axios';
+import Package from '../package/package.model';
+import paypalClient from '../../utils/paypal';
+import paypal from '@paypal/checkout-server-sdk';
+import Subscription from '../subscription/subscription.model';
+
 
 type SessionData = Stripe.Checkout.Session;
 
@@ -29,141 +34,36 @@ export const stripe = new Stripe(
 // console.log('stripe==', stripe);
 
 const addPaymentService = async (payload: any) => {
-  // const session = await mongoose.startSession();
-  // session.startTransaction();
-
-  // // console.log('payment data', payload);
-
-  // try {
-  //   // console.log('console.log-1');
-  //   const newPayload: any = {};
-  //   console.log('payload==', payload);
-
-  //   const user = await User.findById(payload.userId).session(session);
-  //   if (!user) {
-  //     throw new AppError(400, 'User is not found!');
-  //   }
-
-  //   if (user.role !== 'user') {
-  //     throw new AppError(400, 'User is not authorized as a User!!');
-  //   }
-
-  //   newPayload.orderDate = new Date();
-
-  //   const productlist = await Promise.all(
-  //     payload.cartIds.map(async (cartId: any) => {
-  //       // const singleProduct = await Product.findById(product.productId).session(
-  //       //   session,
-  //       // );
-
-  //       const cartItem = await Cart.findById(cartId).session(session);
-
-  //       if (!cartItem) {
-  //         throw new AppError(404, 'Cart is not Found!!');
-  //       }
-
-  //       const singleProduct = await Product.findById(
-  //         cartItem.productId,
-  //       ).session(session);
-
-  //       if (!singleProduct) {
-  //         throw new AppError(404, 'Product is not Found!!');
-  //       }
-
-  //       console.log(
-  //         'singleProduct==availableStock',
-  //         singleProduct.availableStock,
-  //       );
-  //       console.log('cartItem.quantity', cartItem.quantity);
-
-  //       if (Number(singleProduct.availableStock) < cartItem.quantity) {
-  //         throw new AppError(403, 'Insufficient stock for the product!');
-  //       }
-
-  //       return {
-  //         productId: cartItem.productId,
-  //         price: cartItem.price * cartItem.quantity,
-  //         quantity: cartItem.quantity,
-  //       };
-  //     }),
-  //   );
-
-  //   newPayload.productList = productlist;
-  //   newPayload.userId = payload.userId;
-  //   newPayload.phone_number = payload.phone_number;
-  //   newPayload.zip_code = payload.zip_code;
-  //   newPayload.street_name = payload.street_name;
-  //   newPayload.state_code = payload.state_code;
-  //   newPayload.locality = payload.locality;
-  //   newPayload.house_number = payload.house_number;
-  //   newPayload.given_name = payload.given_name;
-  //   newPayload.family_name = payload.family_name;
-  //   newPayload.country = payload.country;
-  //   newPayload.address2 = payload.address2;
-  //   newPayload.business = payload.business;
-
-
-  //   const totalAmount = productlist.reduce(
-  //     (acc, product) => acc + product.price,
-  //     0,
-  //   );
-  //   newPayload.totalAmount = totalAmount;
-    
-  //   if (!payload.shippingCost) {
-  //     throw new AppError(400, 'Shipping cost is required!');
-  //   } else {
-  //     payload.shippingCost = Number(payload.shippingCost);
-  //   }
-
-  //    newPayload.totalAmount = newPayload.totalAmount + payload.shippingCost;
-  //   console.log('newPayload with totalAmount==', newPayload);
-
-  //   const order = await Order.create([newPayload], { session });
-
-  //   if (!order[0]) {
-  //     throw new AppError(400, 'Failed to create order!');
-  //   }
-
-
-
-  //   const paymentInfo = {
-  //     orderId: order[0]._id,
-  //     amount: order[0].totalAmount,
-  //     cartIds: payload.cartIds,
-  //   };
-
-  //   console.log('======stripe payment', paymentInfo);
-  //   const checkoutResult: any = await createCheckout(
-  //     payload.userId,
-  //     paymentInfo,
-  //   );
-
-  //   if (!checkoutResult) {
-  //     throw new AppError(400, 'Failed to create checkout session!');
-  //   }
-
-  //   // Commit transaction
-  //   await session.commitTransaction();
-  //   session.endSession();
-  //   return checkoutResult;
-  // } catch (error) {
-  //   console.error('Transaction Error:', error);
-  //   await session.abortTransaction();
-  //   session.endSession();
-  //   throw error;
-  // }
-};
-
-
-const createPaypalPaymentService = async (payload: any) => {
   const session = await mongoose.startSession();
   session.startTransaction();
+
+
   try {
-    const result = 'success';
-    // Commit transaction
+    const user = await User.findById(payload.userId).session(session);
+    if (!user) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'User not found');
+    }
+    
+    const packageExist = await Package.findById(payload.packageId).session(session);
+    if (!packageExist) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Package not found');
+    }
+
+    const paymentData = {
+      userId: user._id,
+      method: payload.method,
+      amount: packageExist.price,
+       status: 'paid',
+       transactionId: payload.transactionId,
+       transactionDate: new Date(),
+       packageId: packageExist._id
+    }
+
+    const payment = await Payment.create([paymentData], { session });
+  
     await session.commitTransaction();
     session.endSession();
-    return result;
+    return payment;
   } catch (error) {
     console.error('Transaction Error:', error);
     await session.abortTransaction();
@@ -171,6 +71,284 @@ const createPaypalPaymentService = async (payload: any) => {
     throw error;
   }
 };
+
+
+const createPaypalPaymentService = async (payload: any) => {
+  console.log('payload==', payload);
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+
+  // try {
+  //   console.log('console-1')
+  //   const assecToken = await getPaypalAccessToken();
+  //     console.log('assecToken==', assecToken);
+
+  //       const order = await axios.post(
+  //         `https://sandbox.paypal.com/v2/checkout/orders`,
+  //         {
+  //           intent: 'CAPTURE',
+  //           purchase_units: [
+  //             {
+  //               amount: {
+  //                 currency_code: 'USD',
+  //                 value: '100',
+  //               },
+  //               metadata: {
+  //                 user_id: '12345', 
+  //                 source: 'website',
+  //                 other_info: 'Additional information here',
+  //               },
+  //             },
+  //           ],
+  //         },
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${assecToken}`,
+  //             'Content-Type': 'application/json',
+  //           },
+  //         },
+  //       );
+
+  //       console.log('order==', order);
+  //       console.log('order data==', order.data);
+  //       console.log('order data id==', order.data.id);
+
+  //       if (!order.data || !order.data.id) {
+  //         throw new AppError(400, 'Order creation failed.');
+  //       }
+
+  //       const url = order.data.links.find(
+  //         (link: any) => link.rel === 'approve',
+  //       );
+
+  //       if (!url) {
+  //         throw new AppError(400, 'Order approval link not found.');
+  //       }
+
+  //   //     const capture = await axios.post(
+  //   //       `${BASE_URL}/v2/checkout/orders/${order.data.id}/capture`,
+  //   //       {},
+  //   //       {
+  //   //         headers: {
+  //   //           Authorization: `Bearer ${assecToken}`,
+  //   //           'Content-Type': 'application/json',
+  //   //         },
+  //   //       },
+  //   //     );
+
+  //   //     console.log('capture==', capture);
+
+  //   //     if (!capture.data) {
+  //   //       throw new AppError(400, 'Capture failed.');
+  //   //     }
+
+  //   // Commit transaction
+  //   await session.commitTransaction();
+  //   session.endSession();
+  //   return url;
+  // } catch (error) {
+  //   console.error('Transaction Error:', error);
+  //   await session.abortTransaction();
+  //   session.endSession();
+  //   throw error;
+  // }
+
+
+  try {
+    const request = new paypal.orders.OrdersCreateRequest();
+    request.prefer('return=representation');
+    request.requestBody({
+      intent: 'CAPTURE',
+      purchase_units: [
+        {
+          amount: {
+            currency_code: 'USD',
+            value: payload.amount,
+          },
+          // description: `Payment for Campaign: ${result._id}`,
+          custom_id: payload.userId.toString(),
+          // reference_id: ENUM_PAYMENT_PURPOSE.CAMPAIGN_RUN,
+        },
+      ],
+      application_context: {
+        brand_name: 'Your Business Name',
+        landing_page: 'LOGIN',
+        user_action: 'PAY_NOW',
+        // return_url: `${config.paypal.payment_capture_url}`,
+        // cancel_url: `${config.paypal.paypal_campaign_run_payment_cancel_url}`,
+        return_url: `http://10.0.70.163:5002/api/v1/payment/success?orderId=${payload.orderId}`,
+        cancel_url: `http://10.0.70.163:5002/api/v1/payment/cancel?orderId=${payload.orderId}`,
+      },
+    });
+
+    const response = await paypalClient.execute(request);
+    const approvalUrl = response.result.links.find(
+      (link: any) => link.rel === 'approve',
+    )?.href;
+
+    if (!approvalUrl) {
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'PayPal payment creation failed: No approval URL found',
+      );
+    }
+
+    return { url: approvalUrl };
+  } catch (error:any) {
+    console.error('PayPal Payment Error:', error);
+    throw new AppError(error.statusCode, error.message);
+  }
+
+
+};
+
+
+const reniewPaypalPaymentService = async (id:string, userId:string) => {
+  console.log('id==', id);
+  console.log('userId==', userId);
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  
+  try {
+    const subscription = await Subscription.findById(id);
+    if (!subscription) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'Subscription not found!!',
+      );
+    }
+
+    if(subscription.userId.toString() !== userId.toString()){
+      throw new AppError(httpStatus.BAD_REQUEST, 'You are not valid user for reniew this subscription!!');
+    }
+
+
+    const request = new paypal.orders.OrdersCreateRequest();
+    request.prefer('return=representation');
+    request.requestBody({
+      intent: 'CAPTURE',
+      purchase_units: [
+        {
+          amount: {
+            currency_code: 'USD',
+            value: String(subscription.price),
+          },
+          // description: `Payment for Campaign: ${result._id}`,
+          custom_id: userId.toString(),
+          // reference_id: ENUM_PAYMENT_PURPOSE.CAMPAIGN_RUN,
+        },
+      ],
+      application_context: {
+        brand_name: 'Your Business Name',
+        landing_page: 'LOGIN',
+        user_action: 'PAY_NOW',
+        // return_url: `${config.paypal.payment_capture_url}`,
+        // cancel_url: `${config.paypal.paypal_campaign_run_payment_cancel_url}`,
+        return_url: `http://10.0.70.163:5002/api/v1/payment/reniew-success?subscriptionId=${subscription._id}`,
+        cancel_url: `http://10.0.70.163:5002/api/v1/payment/reniew-cancel?subscriptionId=${subscription._id}`,
+      },
+    });
+
+    const response = await paypalClient.execute(request);
+    const approvalUrl = response.result.links.find(
+      (link: any) => link.rel === 'approve',
+    )?.href;
+
+    if (!approvalUrl) {
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'PayPal payment creation failed: No approval URL found',
+      );
+    }
+
+    return { url: approvalUrl };
+  } catch (error:any) {
+    console.error('PayPal Payment Error:', error);
+    throw new AppError(
+      error.statusCode,
+      error.message,
+    );
+  }
+};
+
+
+// Refund Service Function
+const refundPaypalPaymentService = async (
+  captureId: string,
+  amount?: number, 
+) => {
+  try {
+
+    console.log('captureId==', captureId);
+    console.log('amount==', amount);
+    if (!captureId) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Capture ID is required for refund.',
+      );
+    }
+    if (amount && amount <= 0) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Refund amount must be greater than zero.',
+      );
+    }
+    const refundRequest = new paypal.payments.CapturesRefundRequest(captureId);
+
+    const requestBody: any = {
+      amount: {
+        currency_code: 'USD',
+        value: amount ? amount.toFixed(2) : '0.00',
+      },
+    };
+
+    refundRequest.requestBody(requestBody);
+
+    const response = await paypalClient.execute(refundRequest);
+
+    if (response.statusCode === 200 && response.result.status === 'COMPLETED') {
+      return {
+        success: true,
+        message: 'Refund successful!',
+        refundDetails: response.result,
+      };
+    } else {
+      return {
+        success: false,
+        message: 'Refund failed.',
+        error: response.result || 'Unknown error',
+      };
+    }
+  } catch (error: any) {
+    console.error('PayPal Refund Error:', error);
+
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    if (error.statusCode && error.message) {
+      throw new AppError(error.statusCode, error.message);
+    } else if (
+      error.response &&
+      error.response.name &&
+      error.response.message
+    ) {
+      throw new AppError(
+        error.httpStatusCode || httpStatus.INTERNAL_SERVER_ERROR,
+        `PayPal API Error: ${error.response.name} - ${error.response.message}`,
+      );
+    } else {
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'An unexpected error occurred during PayPal refund.',
+      );
+    }
+  }
+};
+
+
 
 const getAllPaymentService = async (query: Record<string, unknown>) => {
   const PaymentQuery = new QueryBuilder(
@@ -1073,6 +1251,8 @@ const getAllEarningRatio = async (year: number, businessId: string) => {
 export const paymentService = {
   addPaymentService,
   createPaypalPaymentService,
+  reniewPaypalPaymentService,
+  refundPaypalPaymentService,
   getAllPaymentService,
   singlePaymentService,
   deleteSinglePaymentService,

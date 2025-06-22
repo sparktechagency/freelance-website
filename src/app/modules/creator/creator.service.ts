@@ -3,7 +3,7 @@ import httpStatus from 'http-status';
 import QueryBuilder from '../../builder/QueryBuilder';
 import { TCreator } from './creator.interface';
 import Creator from './creator.model';
-import { uploadManyToS3, uploadToS3 } from '../../utils/s3';
+import { deleteFromS3, deleteManyFromS3, uploadManyToS3, uploadToS3 } from '../../utils/s3';
 import { access, unlink } from 'fs/promises';
 import { User } from '../user/user.models';
 import mongoose from 'mongoose';
@@ -64,15 +64,10 @@ const createCreator = async (files: any, payload: TCreator) => {
     };
 
     const user = await User.create([userData], { session }); 
+    payload.userId = new mongoose.Types.ObjectId(user[0]._id);
     const result = await Creator.create([payload], { session }); 
 
-    if (result) {
-      await User.updateOne(
-        { _id: user[0]._id },
-        { $set: { creatorId: result[0]._id } },
-        { session }, 
-      );
-    }
+    
 
     if (result) {
       const fileDeletePath = `${files.introductionvideo[0].path}`;
@@ -95,6 +90,17 @@ const createCreator = async (files: any, payload: TCreator) => {
 
     const allVideo = files.ugcExampleVideo.map((video: any) => `${video.path}`);
     await Promise.all(allVideo.map((path: any) => unlink(path)));
+
+    const key = `videos/${files.introductionvideo[0].originalname}`; 
+    await deleteFromS3(key);
+
+    await Promise.all(
+      files.ugcExampleVideo.map((video: any) => { 
+        const videoKey = `videos/${video.originalname}`;
+        return deleteFromS3(videoKey);
+      }),
+    );
+
     throw error;
   
   } finally {
@@ -116,8 +122,8 @@ const getAllCreatorQuery = async (query: Record<string, unknown>) => {
   const meta = await CreatorQuery.countTotal();
   return { meta, result };
 };
-const getCreatorMeQuery = async (email: string) => {
-  const result = await Creator.find({ email });
+const getCreatorMeQuery = async (userId: string) => {
+  const result = await Creator.find({ userId });
   return result;
 };
 
@@ -139,6 +145,31 @@ const updateSingleCreatorQuery = async (id: string, payload: any) => {
   }
 
   const result = await Creator.findByIdAndUpdate(id, payload, { new: true });
+
+  if (!result) {
+    throw new AppError(403, 'Creator updated faild!!');
+  }
+
+  return result;
+};
+
+
+const approvedCancelSingleCreator = async (id: string, status: string) => {
+  console.log('id', id);
+  console.log('updated status', status);
+  const creator: any = await Creator.findById(id);
+  if (!creator) {
+    throw new AppError(404, 'Creator is not found!');
+  }
+  if (creator.status === 'approved') {
+    throw new AppError(404, 'Creator is already approved!');
+  }
+  const newStatus = status === 'approved' ? 'approved' : 'cancel';
+  const result = await Creator.findByIdAndUpdate(
+    id,
+    { status: newStatus },
+    { new: true },
+  );
 
   if (!result) {
     throw new AppError(403, 'Creator updated faild!!');
@@ -170,5 +201,6 @@ export const creatorService = {
   getCreatorMeQuery,
   getSingleCreatorQuery,
   updateSingleCreatorQuery,
+  approvedCancelSingleCreator,
   deletedCreatorQuery,
 };

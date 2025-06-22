@@ -41,13 +41,13 @@ export const uploadToS3 = async (
     console.log('headCommand', headCommand);
 
     try {
-      await s3Client.send(headCommand);
-      throw new AppError(
-        httpStatus.CONFLICT,
-        'File with this name already exists.',
-      );
+     const headResult = await s3Client.send(headCommand);
+     if(headResult.$metadata.httpStatusCode === 200){
+       throw new AppError(httpStatus.CONFLICT, 'File with this name already exists.');
+     }
+
     } catch (headError: any) {
-      if (headError.message) {
+      if (headError.statusCode === httpStatus.CONFLICT) {
         throw new AppError(headError.statusCode, headError.message);
       }
     }
@@ -72,6 +72,7 @@ export const uploadToS3 = async (
 
     return url;
   } catch (error: any) {
+    console.log('file upload error=====', error);
     throw new AppError(httpStatus.BAD_REQUEST, error.message);
   }
 };

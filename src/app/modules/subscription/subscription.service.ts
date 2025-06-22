@@ -5,62 +5,182 @@ import { TSubscription } from './subscription.interface';
 import Subscription from './subscription.model';
 import { deleteFromS3, uploadToS3 } from '../../utils/s3';
 import { unlink } from 'fs/promises';
+import { User } from '../user/user.models';
+import Package from '../package/package.model';
+import { calculateEndDate } from './subcription.utils';
+import mongoose from 'mongoose';
+import { Payment } from '../payment/payment.model';
 
-const createSubscription = async ( files: any, payload: TSubscription) => {
-  console.log('Subscription payload=', payload);
 
-try {
-  
-  const existingSubscription = await Subscription.findOne({
-    type: payload.type,
-    isDeleted: false
-  });
-  if (existingSubscription) {
-    throw new AppError(403, 'Subscription already exists!!');
-  }
+const createSubscription = async (payload: any) => {
+  console.log('payload==subscription', payload);
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  if (files.image && files.image.length > 0) {
-    const image: any = await uploadToS3({
-      file: files.image[0],
-      fileName: files.image[0].originalname,
-      folder: 'subscription/',
-    });
-    payload.image = image;
-  }
-
-  const result = await Subscription.create(payload);
-
-  if (result) {
-    const fileDeletePath = `${files.image[0].path}`;
-    await unlink(fileDeletePath);
-  }
-
-  return result;
-  
-} catch (error) {
   try {
-    const fileDeletePath = `${files.image[0].path}`;
-    await unlink(fileDeletePath);
-  } catch (fsError) {
-    console.error('Error accessing or deleting the image file:', fsError);
+    const user = await User.findById(payload.userId).session(session);
+    if (!user) {
+      throw new AppError(404, 'User not found!');
+    }
+
+    const existingPackage = await Package.findById(payload.packageId).session(
+      session,
+    );
+    if (!existingPackage) {
+      throw new AppError(404, 'This Service is not found!');
+    }
+
+    if (
+      existingPackage.type === 'yearly' ||
+      existingPackage.type === 'monthly'
+    ) {
+      const existingSubscription = await Subscription.findOne({
+        userId: payload.userId,
+        type: existingPackage.type,
+        isDeleted: false,
+      }).session(session);
+
+      if (existingSubscription) {
+        throw new AppError(400, 'You already have a Subscription!');
+      }
+
+      payload.price = existingPackage.price;
+      const days = existingPackage.type === 'monthly' ? 30 : 365;
+      const generateEndDate = calculateEndDate(new Date(), days);
+      payload.endDate = generateEndDate;
+      payload.videoCount = existingPackage.videoCount;
+      payload.type = existingPackage.type;
+      payload.status = 'running';
+    } else {
+      console.log('subscription service package==');
+      const runningubscription = await Subscription.findOne({
+        userId: payload.userId,
+        isDeleted: false,
+        endDate: { $gt: new Date() },
+      }).session(session);
+
+      if (runningubscription) {
+        throw new AppError(400, 'Your Subscription is already running!');
+      }
+      payload.price = existingPackage.price;
+      payload.videoCount = existingPackage.videoCount;
+      payload.type = existingPackage.type;
+      payload.status = 'running';
+    }
+
+   
+
+    const result = await Subscription.create([payload], { session });
+    console.log('result==', result);
+
+  //   const paymentData = {
+  //     userId: user._id,
+  //     method: 'paypal',
+  //     amount: existingPackage.price,
+  //     status: 'paid',
+  //     transactionId: payload.transactionId,
+  //     transactionDate: new Date(),
+  //     subscriptionId: result[0]._id,
+  //   };
+
+  //  const payment = await Payment.create([paymentData], { session });
+
+   if (result.length === 0) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Subscription create faild!!!!');
+    }
+
+    await session.commitTransaction();
+
+    return result[0];
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
-  throw error;
-  
-}
 };
 
-const getAllsubscriptionQuery = async (query: Record<string, unknown>) => {
-  const subscriptionQuery = new QueryBuilder(Subscription.find({isDeleted: false}), query)
-    .search([])
-    .filter()
-    .sort()
-    .paginate()
-    .fields();
 
-  const result = await subscriptionQuery.modelQuery;
+const getAllMysubscriptionQuery = async (query: Record<string, unknown>, userId: string) => {
+ 
+  if (query.running && query.running === 'subscription'){
 
-  const meta = await subscriptionQuery.countTotal();
-  return { meta, result };
+    const result = await Subscription.findOne({ userId: userId, isDeleted: false,  endDate: { $gt: new Date() }, type: ['monthly', 'yearly'] }).populate('packageId').populate('userId');
+
+    // console.log('result==', result);
+
+    return result;
+
+  }
+  else if(query.all && query.all === 'subscription'){
+    delete query.all;
+
+    const subscriptionQuery = new QueryBuilder(
+      Subscription.find({
+        userId: userId,
+        isDeleted: false,
+        type: ['monthly', 'yearly']
+      }).populate('packageId').populate('userId'),
+      query,
+    )
+      .search([])
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const result = await subscriptionQuery.modelQuery;
+    console.log('result==', result);
+
+    const meta = await subscriptionQuery.countTotal();
+    return { meta, result };
+
+  }else if (query.all && query.all === 'package') {
+    delete query.all;
+
+    const subscriptionQuery = new QueryBuilder(
+      Subscription.find({
+        userId: userId,
+        isDeleted: false,
+        type: 'one_time',
+      })
+        .populate('packageId')
+        .populate('userId'),
+      query,
+    )
+      .search([])
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const result = await subscriptionQuery.modelQuery;
+    console.log('result==', result);
+
+    const meta = await subscriptionQuery.countTotal();
+    return { meta, result };
+  } else {
+    const subscriptionQuery = new QueryBuilder(
+      Subscription.find({
+        userId: userId,
+        isDeleted: false,
+      })
+        .populate('packageId')
+        .populate('userId'),
+      query,
+    )
+      .search([])
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
+
+    const result = await subscriptionQuery.modelQuery;
+
+    const meta = await subscriptionQuery.countTotal();
+    return { meta, result };
+  }
+
 };
 
 const getSingleSubscriptionQuery = async (id: string) => {
@@ -69,65 +189,13 @@ const getSingleSubscriptionQuery = async (id: string) => {
     isDeleted: false,
   });
   if (!existingSubscription) {
-    throw new AppError(404, 'Subscription not found!');
+    throw new AppError(404, 'Subscription not found!!');
   }
   return existingSubscription;
 };
 
 const updateSingleSubscriptionQuery = async (id: string, files: any, payload: any) => {
-  try {
-    console.log('id', id);
-    console.log('updated payload--', payload);
-
-    // Find existing package by ID
-    const existingPackage: any = await Subscription.findOne({
-      _id: id,
-      isDeleted: false,
-    });
-    if (!existingPackage) {
-      throw new AppError(404, 'Package not found!');
-    }
-
-    if (files?.image && files?.image.length > 0) {
-      const image: any = await uploadToS3({
-        file: files.image[0],
-        fileName: files.image[0].originalname,
-        folder: 'subscription/',
-      });
-      payload.image = image;
-
-      const result = await Subscription.findByIdAndUpdate(id, payload, {
-        new: true,
-      });
-      if (result) {
-        const fileDeletePath = `${files.image[0].path}`;
-        await unlink(fileDeletePath);
-      }
-
-      const key = existingPackage.image.split('amazonaws.com/')[1];
-
-      const deleteImage: any = await deleteFromS3(key);
-      console.log('deleteImage', deleteImage);
-      if (!deleteImage) {
-        throw new AppError(404, 'Blog Image Deleted File !');
-      }
-
-      return result;
-    } else {
-      const result = await Subscription.findByIdAndUpdate(id, payload, {
-        new: true,
-      });
-      return result;
-    }
-  } catch (error) {
-    try {
-      const fileDeletePath = `${files.image[0].path}`;
-      await unlink(fileDeletePath);
-    } catch (fsError) {
-      console.error('Error accessing or deleting the image file:', fsError);
-    }
-    throw error;
-  }
+  
 };
 
 const deletedsubscriptionQuery = async (id: string) => {
@@ -154,9 +222,10 @@ const deletedsubscriptionQuery = async (id: string) => {
   return result;
 };
 
+
 export const subscriptionService = {
   createSubscription,
-  getAllsubscriptionQuery,
+  getAllMysubscriptionQuery,
   getSingleSubscriptionQuery,
   updateSingleSubscriptionQuery,
   deletedsubscriptionQuery,

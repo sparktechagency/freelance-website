@@ -20,7 +20,7 @@ creatorRouter
       { name: 'introductionvideo', maxCount: 1 },
       { name: 'profile', maxCount: 1 },
     ]),
-  
+
     creatorController.createCreator,
   )
   .get(
@@ -28,16 +28,17 @@ creatorRouter
     //  auth(USER_ROLE.ADMIN),
     creatorController.getAllCreator,
   )
-  .get(
-    '/me',
-     auth(USER_ROLE.CREATOR),
-    creatorController.getCreatorMe,
-  )
+  .get('/me', auth(USER_ROLE.CREATOR), creatorController.getCreatorMe)
   .get('/:id', creatorController.getSingleCreator)
   .patch(
     '/:id',
     //  auth(USER_ROLE.ADMIN),
     creatorController.updateSingleCreator,
+  )
+  .patch(
+    '/approved-cancel/:id',
+    //  auth(USER_ROLE.ADMIN),
+    creatorController.approvedCancelSingleCreator,
   )
   .delete(
     '/:id',

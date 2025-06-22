@@ -1,4 +1,7 @@
+import { Types } from "mongoose";
+
 export type TCreator = {
+  userId: Types.ObjectId;
   profile: string;
   fullName: any;
   email: string;
@@ -37,5 +40,6 @@ export type TCreator = {
   bankName: string;
   iban: string;
   paypalEmail: string;
+  status: string;
 };
  

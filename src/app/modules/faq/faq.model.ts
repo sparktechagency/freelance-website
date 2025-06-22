@@ -10,7 +10,7 @@ const faqSchema = new Schema<TFaq>({
         type:String,
         required:true
     }
-});
+},{ timestamps: true });
 
 const FAQ = model<TFaq>('FAQ', faqSchema);
 export default FAQ;

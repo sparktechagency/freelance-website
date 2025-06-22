@@ -17,8 +17,6 @@ export interface TUserCreate {
   phone: string;
   role: (typeof USER_ROLE)[keyof typeof USER_ROLE];
   address: string;
-  creatorId: Types.ObjectId;
-  brandId: Types.ObjectId;
 }
 
 export interface TUser extends TUserCreate {

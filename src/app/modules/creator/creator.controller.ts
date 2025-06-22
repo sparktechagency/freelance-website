@@ -31,8 +31,8 @@ const getAllCreator = catchAsync(async (req, res) => {
 });
 
 const getCreatorMe = catchAsync(async (req, res) => {
-  const {email} = req.user
-  const result  = await creatorService.getCreatorMeQuery(email);
+  const {userId} = req.user
+  const result = await creatorService.getCreatorMeQuery(userId);
 
   sendResponse(res, {
     success: true,
@@ -67,6 +67,21 @@ const updateSingleCreator = catchAsync(async (req, res) => {
   });
 });
 
+
+const approvedCancelSingleCreator = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const status = req.query.status as string;
+
+  const result = await creatorService.approvedCancelSingleCreator(id, status);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Single Creator  are updated successful!!',
+  });
+});
+
 const deleteSingleCreator = catchAsync(async (req, res) => {
   const result = await creatorService.deletedCreatorQuery(req.params.id);
 
@@ -84,5 +99,6 @@ export const creatorController = {
   getCreatorMe,
   getSingleCreator,
   updateSingleCreator,
+  approvedCancelSingleCreator,
   deleteSingleCreator,
 };

@@ -7,6 +7,6 @@ export type TPayment = {
   status: string;
   transactionId: string;
   transactionDate: Date;
-  packageId: Types.ObjectId;
-  subscriptionId: Types.ObjectId;
+  subscriptionId?: Types.ObjectId; 
+  type:string;
 };

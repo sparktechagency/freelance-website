@@ -8,6 +8,7 @@ const ugcExampleVideo = new Schema({
 
 const creatorSchema = new Schema(
   {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     phone: { type: String, required: true },
     email: { type: String, required: true },
     dateOfBirth: { type: String, required: true },
@@ -58,6 +59,7 @@ const creatorSchema = new Schema(
     bankName: { type: String, required: true },
     iban: { type: String, required: true },
     paypalEmail: { type: String, required: true },
+    status: { type: String, required: true, default: 'pending', enum: ['pending', 'approved', 'cancel'] },
   },
   { timestamps: true },
 );

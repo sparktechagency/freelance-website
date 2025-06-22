@@ -48,16 +48,7 @@ const userSchema = new Schema<TUser>(
       required: false,
       default: '',
     },
-    creatorId: {
-      type: Schema.Types.ObjectId,
-      required: false,
-      ref: 'Creator',
-    },
-    brandId: {
-      type: Schema.Types.ObjectId,
-      required: false,
-      ref: 'Brand',
-    },
+    
   },
   {
     timestamps: true,

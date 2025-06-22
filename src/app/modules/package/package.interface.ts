@@ -4,5 +4,7 @@ export type TPackage = {
   price: number;
   image: string;
   benefits: string[];
+  type: string;
+  videoCount: number;
   isDeleted: boolean;
 };

@@ -10,13 +10,30 @@ import { deleteFromS3, uploadToS3 } from '../../utils/s3';
   const createPackage = async (files: any, payload: TPackage) => {
     try {
        
-        const existingPackage = await Package.findOne({
+        const existingPackage:any = await Package.findOne({
           title: payload.title,
           isDeleted: false
         });
         if (existingPackage) {
           throw new AppError(403, 'Package already exists!!');
         }
+
+        const monthlyPackage: any = await Package.findOne({
+          type:"monthly",
+        });
+
+        if (monthlyPackage && payload.type === 'monthly') {
+          throw new AppError(403, 'Monthly Package already exists!!');
+        }
+        const yearlyPackage: any = await Package.findOne({
+          type: 'yearly',
+        });
+
+        if (yearlyPackage && payload.type === 'yearly') {
+          throw new AppError(403, 'Yearly Package already exists!!');
+        }
+
+
 
         if (files.image && files.image.length > 0) {
           const image: any = await uploadToS3({
@@ -26,6 +43,9 @@ import { deleteFromS3, uploadToS3 } from '../../utils/s3';
           });
           payload.image = image;
         }
+
+        payload.videoCount = Number(payload.videoCount);
+
       const result = await Package.create(payload);
 
       if (result) {
@@ -45,7 +65,21 @@ import { deleteFromS3, uploadToS3 } from '../../utils/s3';
   };
 
 const getAllPackageQuery = async (query: Record<string, unknown>) => {
-  const packageQuery = new QueryBuilder(Package.find({isDeleted: false}), query)
+  const packageQuery = new QueryBuilder(Package.find({isDeleted: false, type: 'one_time'}), query)
+    .search([])
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const result = await packageQuery.modelQuery;
+
+  const meta = await packageQuery.countTotal();
+  return { meta, result };
+};
+
+const getAllSubscriptionPackageQuery = async (query: Record<string, unknown>) => {
+  const packageQuery = new QueryBuilder(Package.find({isDeleted: false, type: ['monthly', 'yearly']}), query)
     .search([])
     .filter()
     .sort()
@@ -147,6 +181,7 @@ const deletedPackageQuery = async (id: string) => {
 export const packageService = {
   createPackage,
   getAllPackageQuery,
+  getAllSubscriptionPackageQuery,
   getSinglePackageQuery,
   updateSinglePackageQuery,
   deletedPackageQuery,

@@ -16,9 +16,14 @@ packageRouter
     packageController.createPackage,
   )
   .get(
-    '/',
+    '/packages',
     //  auth(USER_ROLE.ADMIN),
     packageController.getAllPackage,
+  )
+  .get(
+    '/subscription-packages',
+    //  auth(USER_ROLE.ADMIN),
+    packageController.getAllSubscriptionPackage,
   )
   .get('/:id', packageController.getSinglePackage)
   .patch(
