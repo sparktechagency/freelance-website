@@ -10,6 +10,7 @@ import Subscription from '../subscription/subscription.model';
 import { subscriptionService } from '../subscription/subscription.service';
 import { paymentService } from '../payment/payment.service';
 import mongoose from 'mongoose';
+import { Payment } from '../payment/payment.model';
 
 const createHireCreator = async (files: any, payload: any) => {
   try {
@@ -407,6 +408,12 @@ const createHireCreator = async (files: any, payload: any) => {
 
       console.log('hireCreatorData package data', hireCreatorData);
 
+      const subscriptioinCompleted = await Subscription.findOne({_id:hireCreatorData.subscriptionId, status:'completed'});
+      if (subscriptioinCompleted) {
+        throw new AppError(403, 'Subscription already completed!!');
+      }
+
+
       const result = await HireCreator.create(hireCreatorData);
       if (!result) {
         throw new AppError(403, 'HireCreator created faild!!');
@@ -557,6 +564,9 @@ const approvedSingleHireCreator = async (id: String) => {
     if (hireCreator.status === 'approved') {
       throw new AppError(400, 'HireCreator is already approved!');
     }
+    if (hireCreator.status === 'cancel') {
+      throw new AppError(400, 'HireCreator is already canceled!');
+    }
 
     const subscriptioinExist = await Subscription.findById(
       hireCreator.subscriptionId,
@@ -642,21 +652,56 @@ const cancelSingleHireCreator = async (id: String) => {
       throw new AppError(404, 'Subscription not found!!');
     }
 
- 
-    const result = await HireCreator.findByIdAndUpdate(
-      id,
-      { status: 'cancel' },
-      { new: true, session },
-    );
+    const paymentExist = await Payment.findOne({
+      userId: hireCreator.userId,
+      subscriptionId: hireCreator.subscriptionId
+    }).session(session);
 
-    if (!result) {
-      throw new AppError(403, 'HireCreator update failed!');
+    if (!paymentExist) {
+      throw new AppError(404, 'Payment not found!!');
     }
 
-    await session.commitTransaction();
-    session.endSession();
+    const refundAmount:any = await paymentService.refundPaypalPaymentService(
+      paymentExist.transactionId,
+      Number(paymentExist.amount),
+    );
 
-    return result;
+    console.log('refundAmount', refundAmount);
+
+    if (refundAmount === 'Refund successful.') {
+      const result = await HireCreator.findByIdAndUpdate(
+        id,
+        { status: 'cancel' },
+        { new: true, session },
+      );
+      const paymentDataUpdate = await Payment.findOneAndUpdate(
+        {
+          userId: hireCreator.userId,
+          subscriptionId: hireCreator.subscriptionId,
+        },
+        { isRefund: true },
+        { new: true, session },
+      );
+
+      if (!paymentDataUpdate) {
+        throw new AppError(403, 'Payment update failed!');
+      }
+      if (!result) {
+        throw new AppError(403, 'HireCreator update failed!');
+      }
+      await session.commitTransaction();
+      session.endSession();
+
+      return result;
+    } else {
+      await session.commitTransaction();
+      session.endSession();
+
+      throw new AppError(403, 'HireCreator cancel failed!');
+    }
+      
+
+    
   } catch (error: any) {
     console.log('errror', error);
     await session.abortTransaction();

@@ -5,6 +5,7 @@ import socketIO from './socketio';
 import { Server as SocketIOServer } from 'socket.io'; 
 import colors from 'colors';
 import config from './app/config';
+import { createSuperAdmin } from './app/DB';
 
 let server: Server;
 const socketServer = createServer();
@@ -43,20 +44,16 @@ const io: SocketIOServer = new SocketIOServer(socketServer, {
 
 async function main() {
   try {
-    // Connect to MongoDB
+   
     await mongoose.connect(config.database_url as string);
-
-    // Create a single HTTP server from the Express app
+   
     server = createServer(app);
-
-    // Attach Socket.IO to the same HTTP server
     const io: SocketIOServer = new SocketIOServer(server, {
       cors: {
         origin: '*',
       },
     });
 
-    // Start listening on the same port for both HTTP and WebSocket
     server.listen(Number(config.port), () => {
       console.log(
         colors.green(
@@ -64,11 +61,11 @@ async function main() {
         ).bold,
       );
     });
+    
+    await createSuperAdmin();
 
-    // Initialize your Socket.IO handlers
     socketIO(io);
 
-    // Optionally make the socket server globally accessible
     global.io = io;
   } catch (err) {
     console.error('Error starting the server:', err);

@@ -1,6 +1,12 @@
 import { model, Schema } from "mongoose";
 import { TAssignTaskCreator } from "./assignTaskCreator.interface";
 
+
+const uploads = new Schema({
+  key: { type: String, required: true },
+  url: { type: String, required: true },
+});
+
 const assignTaskCreatorSchema = new Schema<TAssignTaskCreator>(
   {
     creatorId: { type: Schema.Types.ObjectId, ref: 'Creator', required: true },
@@ -19,7 +25,15 @@ const assignTaskCreatorSchema = new Schema<TAssignTaskCreator>(
     status: {
       type: String,
       required: true,
-      enum: ['pending', 'request_approved', 'approved', 'cancel', 'revision', 'completed'],
+      enum: [
+        'pending',
+        'request_approved',
+        'approved',
+        'cancel',
+        'revision',
+        'completed',
+        'delivered',
+      ],
       default: 'pending',
     },
     paymentStatus: {
@@ -27,6 +41,21 @@ const assignTaskCreatorSchema = new Schema<TAssignTaskCreator>(
       required: true,
       enum: ['pending', 'paid', 'failed'],
       default: 'pending',
+    },
+    uploadedFiles: {
+      type: [uploads],
+      default: [],
+      required: false,
+    },
+    isScript: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    videoCount: {
+      type: Number,
+      required: false,
+      default: 0,
     },
   },
   { timestamps: true },

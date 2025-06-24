@@ -472,13 +472,26 @@ const deleteMyAccount = async (id: string, payload: DeleteAccountPayload) => {
   return userDeleted;
 };
 
-const blockedUser = async (id: string) => {
+
+const blockedUser = async (id: string, userId: string) => {
   const existUser: TUser | null = await User.findById(id);
 
   if (!existUser) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
+  const blocker: TUser | null = await User.findById(userId);
+
+  if (!blocker) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Admin not found');
+  }
+
+  if (existUser.role === blocker.role) {
+    throw new AppError(httpStatus.FORBIDDEN, 'You cannot block this Person!!');
+  }
+  if (existUser.role === 'super_admin') {
+    throw new AppError(httpStatus.FORBIDDEN, 'You cannot block this Person!!');
+  }
 
   const blockUnblockSwich = existUser.isActive ? false : true;
 

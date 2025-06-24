@@ -24,12 +24,12 @@ hireCreatorRouter
   )
   .patch(
     '/approved/:id',
-    //  auth(USER_ROLE.ADMIN),
+     auth(USER_ROLE.ADMIN),
     hireCreatorController.approvedSingleHireCreator,
   )
   .patch(
     '/cancel/:id',
-    //  auth(USER_ROLE.ADMIN),
+     auth(USER_ROLE.ADMIN),
     hireCreatorController.cancelSingleHireCreator,
   )
   .delete(

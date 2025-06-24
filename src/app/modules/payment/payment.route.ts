@@ -9,7 +9,7 @@ paymentRouter
   .post('/add-payment', auth(USER_ROLE.USER), paymentController.addPayment)
   .post(
     '/create-paypal-payment',
-    //  auth(USER_ROLE.USER),
+     auth(USER_ROLE.USER),
     paymentController.createPaypalPayment,
   )
   .post(
@@ -21,6 +21,11 @@ paymentRouter
     '/refund-paypal-payment',
     // auth(USER_ROLE.USER),
     paymentController.refundPaypalPayment,
+  )
+  .post(
+    '/transfer-paypal-payment',
+    // auth(USER_ROLE.USER),
+    paymentController.transferPaypalPayment,
   )
 
   .get('/success', paymentController.successPage)

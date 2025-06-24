@@ -37,7 +37,13 @@ const paymentSchema = new Schema<TPayment>(
     type:{
       type:String,
       required:true,
+      enum: ['regular', 'renewal'],
       default:"regular"
+    },
+    isRefund:{
+      type:Boolean,
+      required:true,
+      default:false
     }
   },
   { timestamps: true },

@@ -44,9 +44,9 @@ const addPayment = catchAsync(async (req, res, next) => {
 
 
 const createPaypalPayment = catchAsync(async (req, res, next) => {
-  // const { userId } = req.user;
-  // const orderData = req.body;
-  // orderData.userId = userId;
+  const { userId } = req.user;
+  const orderData = req.body;
+  orderData.userId = userId;
   const result = await paymentService.createPaypalPaymentService(req.body);
   if (result) {
     sendResponse(res, {
@@ -91,6 +91,30 @@ const reniewPaypalPayment = catchAsync(async (req, res, next) => {
 
 
 const refundPaypalPayment = catchAsync(async (req, res, next) => {
+  const captureId = req.body.captureId;
+  const amount = req.body.amount;
+  const result = await paymentService.refundPaypalPaymentService(
+    captureId,
+    amount,
+  );
+  if (result) {
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Refund Payment Successfull!!',
+      data: result,
+    });
+  } else {
+    sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: true,
+      message: 'Data is not found',
+      data: {},
+    });
+  }
+});
+
+const transferPaypalPayment = catchAsync(async (req, res, next) => {
   const captureId = req.body.captureId;
   const amount = req.body.amount;
   const result = await paymentService.refundPaypalPaymentService(
@@ -259,6 +283,11 @@ const successPage = async (req: Request, res: Response) => {
 
     const captureRequest = new paypal.orders.OrdersCaptureRequest(token);
     const captureResponse = await paypalClient.execute(captureRequest);
+    
+    console.log(
+      'transactionId',
+      captureResponse.result.purchase_units[0].payments.captures[0].id,
+    );
 
     if (captureResponse.result.status !== 'COMPLETED') {
       throw new Error('Payment capture failed');
@@ -274,6 +303,8 @@ const successPage = async (req: Request, res: Response) => {
       throw new Error('HireCreator update failed!');
     }
 
+  
+
 
     const paymentData = {
       userId: updateHireCreator.userId,
@@ -283,10 +314,9 @@ const successPage = async (req: Request, res: Response) => {
           .value,
       ),
       status: 'paid',
-      transactionId: captureResponse.result.id,
+      transactionId:captureResponse.result.purchase_units[0].payments.captures[0].id,
       transactionDate: new Date(),
       subscriptionId: updateHireCreator.subscriptionId,
-      
     };
     console.log('payment data', paymentData);
 
@@ -436,12 +466,14 @@ const reniewSuccessPage = async (req: Request, res: Response) => {
           .value,
       ),
       status: 'paid',
-      transactionId: captureResponse.result.id,
+      transactionId:
+        captureResponse.result.purchase_units[0].payments.captures[0].id,
       transactionDate: new Date(),
       subscriptionId: isExistSubscription._id,
-      type:"reniew"
+      type: 'reniew',
     };
     console.log('payment data', paymentData);
+    
 
     const payment = await Payment.create([paymentData], { session });
     console.log('payment', payment);
@@ -653,6 +685,7 @@ export const paymentController = {
   createPaypalPayment,
   reniewPaypalPayment,
   refundPaypalPayment,
+  transferPaypalPayment,
   getAllPayment,
   getSinglePayment,
   deleteSinglePayment,

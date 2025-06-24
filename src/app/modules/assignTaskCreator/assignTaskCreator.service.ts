@@ -6,7 +6,10 @@ import AssignTaskCreator from './assignTaskCreator.model';
 import Creator from '../creator/creator.model';
 import HireCreator from '../hireCreator/hireCreator.model';
 import { User } from '../user/user.models';
-
+import Subscription from '../subscription/subscription.model';
+import { deleteManyFromS3, uploadManyToS3 } from '../../utils/s3';
+import { unlink } from 'fs/promises';
+import mongoose from 'mongoose';
 
 const createAssignTaskCreator = async (payload: any) => {
   console.log('AssignTaskCreator payload=', payload);
@@ -23,11 +26,19 @@ const createAssignTaskCreator = async (payload: any) => {
     throw new AppError(404, 'Hire Creator not found');
   }
   if (existHireCreator.status !== 'approved') {
-    throw new AppError(404, 'Hire Creator not found');
+    throw new AppError(404, 'Hire Creator is not approved!');
   }
 
   if (payload.price <= 0) {
     throw new AppError(400, 'Price must be greater than zero!');
+  }
+
+  const videoCount: any = await Subscription.findById(
+    existHireCreator.subscriptionId,
+  );
+  console.log('videoCount', videoCount);
+  if (!videoCount) {
+    throw new AppError(404, 'Subscription not found for this Hire Creator');
   }
 
   const creatorData = await Promise.all(
@@ -49,15 +60,19 @@ const createAssignTaskCreator = async (payload: any) => {
           price: payload.price,
           hireCreatorId: existHireCreator._id,
           hireCreatorUserId: existHireCreator.userId,
+          videoCount:
+            existHireCreator.takeVideoCount !== 0
+              ? existHireCreator.takeVideoCount
+              : videoCount.videoCount,
         };
       }
 
       return null;
     }),
   );
-console.log('creatorData', creatorData);
+  console.log('creatorData', creatorData);
   const validCreatorData = creatorData.filter((data) => data !== null);
-    console.log('validCreatorData', validCreatorData);
+  console.log('validCreatorData', validCreatorData);
 
   if (validCreatorData.length === 0) {
     throw new AppError(
@@ -74,7 +89,6 @@ console.log('creatorData', creatorData);
 
   return result;
 };
-  
 
 const getAllAssignTaskCreatorQuery = async (query: Record<string, unknown>) => {
   const AssignTaskCreatorQuery = new QueryBuilder(
@@ -97,18 +111,20 @@ const getAllAssignTaskCreatorQuery = async (query: Record<string, unknown>) => {
   return { meta, result };
 };
 
+const getAllAssignTaskCreatorOfUserQuery = async (
+  query: Record<string, unknown>,
+  userId: string,
+) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError(404, 'User not found');
+  }
 
-const getAllAssignTaskCreatorOfUserQuery = async (query: Record<string, unknown>, userId:string) => {
-    const user = await User.findById(userId);
-    if (!user) {
-        throw new AppError(404, 'User not found');
-        }
+  const updateUserId =
+    user.role === 'creator' ? 'creatorUserId' : 'hireCreatorUserId';
 
-        const updateUserId = user.role === 'creator' ? "creatorUserId" : "hireCreatorUserId" ;
-
-
-  const AssignTaskCreatorQuery = new QueryBuilder(
-    AssignTaskCreator.find({[updateUserId]: userId})
+  const assignTaskCreatorQuery = new QueryBuilder(
+    AssignTaskCreator.find({ [updateUserId]: userId })
       .populate('creatorId')
       .populate('creatorUserId')
       .populate('hireCreatorId')
@@ -121,9 +137,9 @@ const getAllAssignTaskCreatorOfUserQuery = async (query: Record<string, unknown>
     .paginate()
     .fields();
 
-  const result = await AssignTaskCreatorQuery.modelQuery;
+  const result = await assignTaskCreatorQuery.modelQuery;
 
-  const meta = await AssignTaskCreatorQuery.countTotal();
+  const meta = await assignTaskCreatorQuery.countTotal();
   return { meta, result };
 };
 
@@ -140,19 +156,47 @@ const getSingleAssignTaskCreatorQuery = async (id: string) => {
 };
 
 
+const getSingleHireCreatorToAssignTaskCreator = async (id: string) => {
+    if (!id) {
+        throw new AppError(400, 'Invalid input parameters');
+    }
+
+  const assignTaskCreator: any = await AssignTaskCreator.findOne({
+    hireCreatorId: id,
+    status: { $nin: ['cancel', 'pending', 'request_approved'] },
+  })
+    .populate('creatorId')
+    .populate('creatorUserId')
+    .populate('hireCreatorId')
+    .populate('hireCreatorUserId');
+  if (!assignTaskCreator) {
+    throw new AppError(404, 'AssignTaskCreator Not Found!!');
+  }
+  return assignTaskCreator;
+};
+
 const singleAssignTaskCreatorApprovedCancelQuery = async (
   id: string,
   status: any,
+    userId: string,
 ) => {
   console.log('id', id);
   console.log('updated status', status);
-  const assignTaskCreatorProduct: any = await AssignTaskCreator.findById(id);
-  if (!assignTaskCreatorProduct) {
+  const assignTaskCreator: any = await AssignTaskCreator.findById(id);
+  if (!assignTaskCreator) {
     throw new AppError(404, 'AssignTaskCreator is not found!');
   }
+  if (assignTaskCreator.status !== 'pending') {
+    throw new AppError(404, 'AssignTaskCreator is not pending!');
+  }
+
+  if (assignTaskCreator.creatorUserId.toString() !== userId.toString()) {
+    throw new AppError(403, 'You are not authorized to approve or cancel this task creator!');
+  }
+
 
   if (status === 'request_approved') {
-    if (assignTaskCreatorProduct.status === 'request_approved') {
+    if (assignTaskCreator.status === 'request_approved') {
       throw new AppError(403, 'AssignTaskCreator is already approved!');
     }
     const result = await AssignTaskCreator.findByIdAndUpdate(
@@ -169,7 +213,7 @@ const singleAssignTaskCreatorApprovedCancelQuery = async (
 
     return result;
   } else {
-    if (assignTaskCreatorProduct.status === 'cancel') {
+    if (assignTaskCreator.status === 'cancel') {
       throw new AppError(403, 'AssignTaskCreator is already cancel!');
     }
 
@@ -181,22 +225,416 @@ const singleAssignTaskCreatorApprovedCancelQuery = async (
 
     return result;
   }
-
-  
 };
 
-const deletedAssignTaskCreatorQuery = async (id: string) => {
+const singleAssignTaskCreatorApprovedByAdmin = async (id: string) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    console.log('id', id);
+    const assignTaskCreatorProduct: any =
+      await AssignTaskCreator.findById(id).session(session);
+    if (!assignTaskCreatorProduct) {
+      throw new AppError(404, 'AssignTaskCreator is not found!');
+    }
+
+    if (assignTaskCreatorProduct.status !== 'request_approved') {
+      throw new AppError(404, 'AssignTaskCreator is not approved yet!');
+    }
+
+    if (assignTaskCreatorProduct.status === 'approved') {
+      throw new AppError(404, 'AssignTaskCreator is already approved!');
+    }
+
+    const result = await AssignTaskCreator.findByIdAndUpdate(
+      id,
+      { status: 'approved' },
+      { new: true, session },
+    );
+    if (!result) {
+      throw new AppError(403, 'AssignTaskCreator update failed!');
+    }
+
+    const updateHireCreator = await HireCreator.findByIdAndUpdate(
+      result.hireCreatorId,
+      { status: 'ongoing' },
+      { new: true, session },
+    );
+    if (!updateHireCreator) {
+      throw new AppError(403, 'Hire Creator update failed!');
+    }
+
+    await AssignTaskCreator.updateMany(
+      {
+        hireCreatorId: result.hireCreatorId,
+        status: { $in: ['request_approved', 'pending'] },
+      },
+      { status: 'cancel' },
+      { session },
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return result;
+  } catch (error:any) {
+    await session.abortTransaction();
+    session.endSession();
+
+    throw new AppError(
+      error.statusCode || 500,
+      error.message || 'Something went wrong!',
+    );
+  }
+};
+  
+
+const assignTaskCreatorUploadVideosByCreator = async (
+  id: string,
+  userId: string,
+  files: any,
+) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (!id || !userId) {
+      throw new AppError(400, 'Invalid input parameters');
+    }
+
+    const assignTaskCreatorProduct: any =
+      await AssignTaskCreator.findById(id).session(session);
+    if (!assignTaskCreatorProduct) {
+      throw new AppError(404, 'AssignTaskCreator is not found!!');
+    }
+
+    if (
+      (assignTaskCreatorProduct.status !== 'approved' &&
+        assignTaskCreatorProduct.status !== 'revision') ||
+      assignTaskCreatorProduct.creatorUserId.toString() !== userId.toString()
+    ) {
+      throw new AppError(
+        404,
+        'AssignTaskCreator is not approved or revision, you are not the creator!',
+      );
+    }
+
+    if (!files || files.uploadVideos.length === 0) {
+      throw new AppError(400, 'No video files uploaded');
+    }
+
+    if (files.uploadVideos.length > assignTaskCreatorProduct.videoCount) {
+      throw new AppError(
+        400,
+        `You can only upload ${assignTaskCreatorProduct.videoCount} videos`,
+      );
+    }
+
+    if (files.uploadVideos && files.uploadVideos.length > 0) {
+      const videos: any = await uploadManyToS3(
+        files.uploadVideos,
+        'uploadVideos/',
+      );
+
+      if (!videos || videos.length === 0) {
+        throw new AppError(400, 'Video upload failed');
+      }
+
+      const updateAssignTaskUploadVideos =
+        await AssignTaskCreator.findByIdAndUpdate(
+          id,
+          { uploadedFiles: videos, status: 'completed' },
+          { new: true, session },
+        );
+
+      const updateHireCreator = await HireCreator.findByIdAndUpdate(
+        assignTaskCreatorProduct.hireCreatorId,
+        { status: 'completed' },
+        { new: true, session },
+      );
+
+      if (!updateAssignTaskUploadVideos || !updateHireCreator) {
+        throw new AppError(
+          403,
+          'Failed to update AssignTaskCreator or HireCreator',
+        );
+      }
+
+      const allVideoPaths = files.uploadVideos.map(
+        (video: any) => `${video.path}`,
+      );
+      await Promise.all(allVideoPaths.map((path: any) => unlink(path)));
+
+      await session.commitTransaction();
+      session.endSession();
+
+      return updateAssignTaskUploadVideos;
+    }
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+
+    try {
+      const allVideoPaths = files?.uploadVideos?.map(
+        (video: any) => `${video.path}`,
+      );
+      if (allVideoPaths) {
+        await Promise.all(allVideoPaths.map((path: any) => unlink(path)));
+      }
+    } catch (fsError) {
+      console.error('Error accessing or deleting the video files:', fsError);
+    }
+
+    throw new AppError(
+      error.statusCode || 500,
+      error.message || 'An error occurred',
+    );
+  }
+};
+  
+
+
+const assignTaskRevisionByUser = async (
+  id: string,
+  userId: string,
+  payload: any,
+) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (!payload.revisionText && !payload.status) {
+      throw new AppError(400, 'Invalid input parameters: revisionText or status is required');
+    }
+
+    if (!id || !userId) {
+      throw new AppError(400, 'Invalid input parameters');
+    }
+
+    if (payload.revisionText) {
+      const assignTaskCreator: any =
+        await AssignTaskCreator.findById(id).session(session);
+      if (!assignTaskCreator) {
+        throw new AppError(404, 'AssignTaskCreator is not found!!');
+      }
+      if (assignTaskCreator.status === 'delivered') {
+        throw new AppError(404, 'AssignTaskCreator is already delivered!!');
+      }
+
+      if (
+        assignTaskCreator.status !== 'completed' ||
+        assignTaskCreator.hireCreatorUserId.toString() !== userId.toString()
+      ) {
+        throw new AppError(
+          404,
+          'AssignTaskCreator is not completed, you are not the brand creator!!',
+        );
+      }
+      const result = await AssignTaskCreator.findByIdAndUpdate(
+        id,
+        { status: 'revision', isScript: payload.revisionText },
+        { new: true, session },
+      );
+      if (!result) {
+        throw new AppError(403, 'AssignTaskCreator update failed!!');
+      }
+
+      const updateHireCreator = await HireCreator.findByIdAndUpdate(
+        assignTaskCreator.hireCreatorId,
+        { status: 'revision' },
+        { new: true, session },
+      );
+
+      if (!updateHireCreator) {
+        throw new AppError(403, 'HireCreator update failed!!');
+      }
+      await session.commitTransaction();
+      session.endSession();
+
+      return result;
+    } else if (payload.status && payload.status === 'delivered') {
+        const assignTaskCreator: any =
+            await AssignTaskCreator.findById(id).session(session);
+        if (!assignTaskCreator) {
+            throw new AppError(404, 'AssignTaskCreator is not found!!');
+        }
+    
+        if (
+          assignTaskCreator.status !== 'completed' ||
+          assignTaskCreator.hireCreatorUserId.toString() !== userId.toString()
+        ) {
+          throw new AppError(
+            404,
+            'AssignTaskCreator is not revision, you are not the brand creator!!',
+          );
+        }
+        const result = await AssignTaskCreator.findByIdAndUpdate(
+            id,
+            { status: 'delivered' },
+            { new: true, session },
+        );
+        if (!result) {
+            throw new AppError(403, 'AssignTaskCreator update failed!!');
+        }
+    
+        const updateHireCreator:any = await HireCreator.findByIdAndUpdate(
+            assignTaskCreator.hireCreatorId,
+            { status: 'delivered' },
+            { new: true, session },
+        );
+
+        const subscriptioinUpdate = await Subscription.findOneAndUpdate(
+          { _id: updateHireCreator.subscriptionId },
+          { status: 'completed' },
+          { new: true, session },
+        );
+    
+        if (!updateHireCreator) {
+            throw new AppError(403, 'Hire Creator update failed!!');
+        }
+        await session.commitTransaction();
+        session.endSession();
+    
+        return result;
+    }
+  } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
+
+    throw new AppError(
+      error.statusCode || 500,
+      error.message || 'Something went wrong!',
+    );
+  }
+};
+
+
+const assignTaskCreatorReSubmitUploadVideosByCreator = async (
+  id: string,
+  userId: string,
+  files: any,
+) => {
+
+  if (!id || !userId) {
+    throw new AppError(400, 'Invalid input parameters');
+  }
+  const assignTaskCreatorProduct: any = await AssignTaskCreator.findById(id);
+  if (!assignTaskCreatorProduct) {
+    throw new AppError(404, 'AssignTaskCreator is not found!!');
+  }
+
+  try {
+    if (
+      assignTaskCreatorProduct.status !== 'revision' ||
+      assignTaskCreatorProduct.creatorUserId.toString() !== userId.toString()
+    ) {
+      throw new AppError(
+        404,
+        'AssignTaskCreator is not approved, you are not the creator!',
+      );
+    }
+
+    if (!files || files.uploadVideos.length === 0) {
+      throw new AppError(400, 'No video files uploaded');
+    }
+
+
+    if (files.uploadVideos.length > assignTaskCreatorProduct.videoCount) {
+      throw new AppError(
+        400,
+        `You can only upload ${assignTaskCreatorProduct.videoCount} videos`,
+      );
+    }
+
+    console.log('assignTaskCreatorProduct.uploadedFiles', assignTaskCreatorProduct.uploadedFiles);
+
+     const keys = assignTaskCreatorProduct.uploadedFiles.map(
+       (key: any) => key.url.split('amazonaws.com/')[1],
+     );
+      console.log('keys', keys);
+    
+      const deleteImage: any = await deleteManyFromS3(keys);
+      console.log('deleteImage', deleteImage);
+
+
+      if (deleteImage && files.uploadVideos && files.uploadVideos.length > 0) {
+        const videos: any = await uploadManyToS3(
+          files.uploadVideos,
+          'uploadVideos/',
+        );
+
+        if (!videos || videos.length === 0) {
+          throw new AppError(400, 'Video upload failed');
+        }
+
+        const updateAssignTaskUploadVideos =
+          await AssignTaskCreator.findByIdAndUpdate(
+            id,
+            { uploadedFiles: videos, status: 'completed' },
+            { new: true },
+          );
+
+        if (updateAssignTaskUploadVideos) {
+          const allVideo = files.uploadVideos.map(
+            (video: any) => `${video.path}`,
+          );
+          await Promise.all(allVideo.map((path: any) => unlink(path)));
+        }
+
+        return updateAssignTaskUploadVideos;
+      }
+
+    
+  } catch (error:any) {
+    try {
+      const allVideo = files?.uploadVideos?.map(
+        (video: any) => `${video.path}`,
+      );
+      await Promise.all(allVideo?.map((path: any) => unlink(path)));
+    } catch (fsError) {
+      console.error('Error accessing or deleting the image file:', fsError);
+        throw new AppError(
+            error.statusCode || 500,
+            error.message || 'An error occurred while processing the request'
+        );
+    }
+    throw error;
+  }
+};
+
+const deletedAssignTaskCreatorQuery = async (id: string, userId: string) => {
   if (!id) {
     throw new AppError(400, 'Invalid input parameters');
   }
-  const assignTaskCreator = await AssignTaskCreator.findById(id);
+  const assignTaskCreator = await AssignTaskCreator.findOne({
+    _id: id,
+    creatorUserId: userId,
+  });
+
   if (!assignTaskCreator) {
-    throw new AppError(404, 'AssignTaskCreator Not Found!!');
+    throw new AppError(
+      404,
+      'AssignTaskCreator Not Found or Unauthorized Access',
+    );
   }
 
-  const result = await AssignTaskCreator.findByIdAndDelete(id);
-  if (!result) {
-    throw new AppError(404, 'AssignTaskCreator Result Not Found !');
+  if (assignTaskCreator.status !== 'cancel') {
+    throw new AppError(
+      404,
+      'AssignTaskCreator is not cancel, cannot be deleted',
+    );
+  }
+
+  const result = await AssignTaskCreator.deleteOne({
+    _id: id,
+    creatorUserId: userId,
+  });
+  if (result.deletedCount === 0) {
+    throw new AppError(
+      404,
+      'AssignTaskCreator not deleted or Result Not Found',
+    );
   }
 
   return result;
@@ -207,6 +645,11 @@ export const assignTaskCreatorService = {
   getAllAssignTaskCreatorQuery,
   getAllAssignTaskCreatorOfUserQuery,
   getSingleAssignTaskCreatorQuery,
+  getSingleHireCreatorToAssignTaskCreator,
   singleAssignTaskCreatorApprovedCancelQuery,
+  singleAssignTaskCreatorApprovedByAdmin,
+  assignTaskCreatorUploadVideosByCreator,
+  assignTaskRevisionByUser,
+  assignTaskCreatorReSubmitUploadVideosByCreator,
   deletedAssignTaskCreatorQuery,
 };

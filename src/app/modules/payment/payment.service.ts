@@ -308,12 +308,8 @@ const refundPaypalPaymentService = async (
 
     const response = await paypalClient.execute(refundRequest);
 
-    if (response.statusCode === 200 && response.result.status === 'COMPLETED') {
-      return {
-        success: true,
-        message: 'Refund successful!',
-        refundDetails: response.result,
-      };
+    if (response.statusCode === 201 && response.result.status === 'COMPLETED') {
+      return "Refund successful.";
     } else {
       return {
         success: false,
@@ -330,21 +326,7 @@ const refundPaypalPaymentService = async (
 
     if (error.statusCode && error.message) {
       throw new AppError(error.statusCode, error.message);
-    } else if (
-      error.response &&
-      error.response.name &&
-      error.response.message
-    ) {
-      throw new AppError(
-        error.httpStatusCode || httpStatus.INTERNAL_SERVER_ERROR,
-        `PayPal API Error: ${error.response.name} - ${error.response.message}`,
-      );
-    } else {
-      throw new AppError(
-        httpStatus.INTERNAL_SERVER_ERROR,
-        'An unexpected error occurred during PayPal refund.',
-      );
-    }
+    } 
   }
 };
 

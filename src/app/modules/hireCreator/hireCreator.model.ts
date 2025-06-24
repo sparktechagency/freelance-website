@@ -82,7 +82,7 @@ const hireCreatorSchema = new Schema({
   status: {
     type: String,
     required: true,
-    enum: ['draft', 'pending', 'approved', 'cancel', 'shipped', 'delivered', 'revision', 'completed'],
+    enum: ['draft', 'pending', 'approved', 'cancel', 'ongoing', 'delivered', 'revision', 'completed'],
     default: 'draft',
   },
   paymentStatus: {

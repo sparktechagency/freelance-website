@@ -8,4 +8,10 @@ export type TAssignTaskCreator = {
   hireCreatorUserId: Types.ObjectId;
   status: string;
   paymentStatus: string;
+  uploadedFiles: {
+    key: string;
+    url: string;
+  }[];
+  isScript: string;
+  videoCount: number;
 };
