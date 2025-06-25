@@ -12,7 +12,12 @@ blogRouter
   .post(
     '/create-blog',
     //  auth(USER_ROLE.ADMIN),
-    upload.fields([{ name: 'image', maxCount: 1 }]),
+    upload.fields([
+      { name: 'image', maxCount: 1 },
+      { name: 'bodyImage', maxCount: 1 },
+      { name: 'upload3Photos', maxCount: 3 },
+      { name: 'ugcImage', maxCount: 1 },
+    ]),
     blogController.createBlog,
   )
   .get(
@@ -25,7 +30,12 @@ blogRouter
     '/:id',
     //  auth(USER_ROLE.ADMIN),
 
-    upload.fields([{ name: 'image', maxCount: 1 }]),
+    upload.fields([
+      { name: 'image', maxCount: 1 },
+      { name: 'bodyImage', maxCount: 1 },
+      { name: 'upload3Photos', maxCount: 3 },
+      { name: 'ugcImage', maxCount: 1 },
+    ]),
     blogController.updateSingleBlog,
   )
   .delete(

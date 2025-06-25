@@ -117,7 +117,7 @@ const refundPaypalPayment = catchAsync(async (req, res, next) => {
 const transferPaypalPayment = catchAsync(async (req, res, next) => {
   const captureId = req.body.captureId;
   const amount = req.body.amount;
-  const result = await paymentService.refundPaypalPaymentService(
+  const result = await paymentService.transferPaypalPaymentService(
     captureId,
     amount,
   );
@@ -125,7 +125,7 @@ const transferPaypalPayment = catchAsync(async (req, res, next) => {
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: 'Refund Payment Successfull!!',
+      message: 'Transefer Payment Successfull!!',
       data: result,
     });
   } else {
@@ -137,6 +137,7 @@ const transferPaypalPayment = catchAsync(async (req, res, next) => {
     });
   }
 });
+
 
 const getAllPayment = catchAsync(async (req, res, next) => {
   const result = await paymentService.getAllPaymentService(req.query);
@@ -249,6 +250,44 @@ const getAllIncomeRasio = catchAsync(async (req, res) => {
     message: 'Income All Ratio successful!!',
   });
 });
+
+
+const overviewAll = catchAsync(async (req, res) => {
+  const result = await paymentService.getAllOverview();
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'All Overview successful!!',
+  });
+});
+
+const getBrandEngagement = catchAsync(async (req, res) => {
+  const { days }: any = req.query;
+  const result = await paymentService.getBrandEngagement(days);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Brand Engagement successful!!',
+  });
+});
+
+const getAllSubscrptionUserRasioBydays = catchAsync(async (req, res) => {
+  const { days }: any = req.query;
+
+  const result = await paymentService.getAllSubscriptionUsersByWeekly(days);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Subscription users All Ratio successful!!',
+  });
+});
+
 
 const getAllIncomeRasioBydays = catchAsync(async (req, res) => {
   const { days }: any = req.query;
@@ -691,7 +730,10 @@ export const paymentController = {
   deleteSinglePayment,
   getAllPaymentByCustormer,
   getAllIncomeRasio,
+  overviewAll,
+  getBrandEngagement,
   getAllIncomeRasioBydays,
+  getAllSubscrptionUserRasioBydays,
   createCheckout,
   conformWebhook,
   successPage,

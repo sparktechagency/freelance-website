@@ -9,7 +9,7 @@ paymentRouter
   .post('/add-payment', auth(USER_ROLE.USER), paymentController.addPayment)
   .post(
     '/create-paypal-payment',
-     auth(USER_ROLE.USER),
+    auth(USER_ROLE.USER),
     paymentController.createPaypalPayment,
   )
   .post(
@@ -38,7 +38,13 @@ paymentRouter
     // auth(USER_ROLE.ADMIN),
     paymentController.getAllPayment,
   )
+  .get('/overview-all', paymentController.overviewAll)
+  .get('/brand-engagement', paymentController.getBrandEngagement)
   .get('/all-income-rasio', paymentController.getAllIncomeRasio)
+  .get(
+    '/all-subsription-users-rasio',
+    paymentController.getAllSubscrptionUserRasioBydays,
+  )
   .get('/all-income-rasio-by-days', paymentController.getAllIncomeRasioBydays)
   .get(
     '/all-earning-rasio',

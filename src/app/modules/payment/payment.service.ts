@@ -18,6 +18,8 @@ import Package from '../package/package.model';
 import paypalClient from '../../utils/paypal';
 import paypal from '@paypal/checkout-server-sdk';
 import Subscription from '../subscription/subscription.model';
+import * as paypalPayouts from '@paypal/payouts-sdk';
+import HireCreator from '../hireCreator/hireCreator.model';
 
 
 type SessionData = Stripe.Checkout.Session;
@@ -331,6 +333,93 @@ const refundPaypalPaymentService = async (
 };
 
 
+const transferPaypalPaymentService = async (email: string, amount: number) => {
+  try {
+
+    const requestBody:any = {
+      sender_batch_header: {
+        email_subject: 'You have a payment',
+        sender_batch_id: `batch_${Math.random().toString(36).substr(2, 9)}`,
+      },
+      items: [
+        {
+          recipient_type: 'EMAIL',
+          amount: {
+            value: 100,
+            // value: amount.toFixed(2),
+            currency: 'USD', 
+          },
+          receiver: 'sb-dx6z737480442@personal.example.com',
+          note: `Payment of 100 USD`,
+          sender_item_id: `item_${Math.random().toString(36).substr(2, 9)}`,
+        },
+      ],
+    };
+
+    const payoutRequest = new paypalPayouts.payouts.PayoutsPostRequest();
+    payoutRequest.requestBody(requestBody);
+
+    const response = await paypalClient.execute(payoutRequest);
+    console.log('response==', response);
+    console.log('response==', response.result);
+
+    if (response.statusCode === 201) {
+      console.log('Payment transfer was successful.');
+      return response.result;
+    } else {
+      console.error('Failed to transfer funds.');
+      throw new Error('Failed to transfer funds');
+    }
+  } catch (error:any) {
+    console.error('Error executing PayPal transfer:', error.message);
+    throw new Error('Error executing PayPal transfer');
+  }
+};
+
+
+
+// const checkPayoutStatus = async (batchId: string) => {
+//   try {
+//     // Create a GET request to retrieve the payout status
+//     const payoutStatusRequest = new paypalPayouts.payouts.PayoutsGetRequest(
+//       batchId,
+//     );
+
+//     // Execute the request
+//     const response = await paypalClient.execute(payoutStatusRequest);
+
+//     // Check if the response is successful
+//     if (response.statusCode === 200) {
+//       // Log the current status of the payout
+//       console.log('Payout Status:', response.result.batch_header.batch_status);
+
+//       // Handle different batch statuses
+//       switch (response.result.batch_header.batch_status) {
+//         case 'SUCCESS':
+//           console.log('Payout was successful!');
+//           break;
+//         case 'PENDING':
+//           console.log('Payout is still processing.');
+//           break;
+//         case 'FAILED':
+//           console.error('Payout failed.');
+//           break;
+//         default:
+//           console.log('Payout status is unknown.');
+//       }
+
+//       return response.result;
+//     } else {
+//       console.error('Failed to fetch payout status.');
+//       throw new Error('Failed to fetch payout status');
+//     }
+//   } catch (error:any) {
+//     console.error('Error checking payout status:', error.message);
+//     throw new Error('Error checking payout status');
+//   }
+// };
+
+
 
 const getAllPaymentService = async (query: Record<string, unknown>) => {
   const PaymentQuery = new QueryBuilder(
@@ -426,6 +515,45 @@ const getAllIncomeRatio = async (year: number) => {
   // console.log({ months });
 
   return months;
+};
+
+
+const getAllOverview = async () => {
+
+  const totalCreator = await User.countDocuments({ role: 'creator' });
+  const totalBrand = await User.countDocuments({ role: 'user' });
+  const totalProject = await HireCreator.countDocuments({status: "delivered"});
+  const totalRevenue = await Payment.aggregate([
+    {
+      $match: { status: 'paid', isRefund:false },
+    },
+    {
+      $group: {
+        _id: null,
+        totalIncome: { $sum: '$amount' },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        totalIncome: 1,
+      },
+    },
+  ]);
+  const totalSubscription = await Subscription.countDocuments({
+    status: ['running', 'completed'],
+  });
+
+
+
+  
+  return {
+    totalCreator,
+    totalBrand,
+    totalProject,
+    totalRevenue: totalRevenue.length > 0 ? totalRevenue[0].totalIncome : 0,
+    totalSubscription,
+  };
 };
 
 // const getAllIncomeRatiobyDays = async (days: string) => {
@@ -615,6 +743,169 @@ const getAllIncomeRatiobyDays = async (days: string) => {
   });
 
   return timeSlots;
+};
+
+const getAllSubscriptionUsersByWeekly = async (days: string) => {
+  const currentDay = new Date();
+  let startDate: Date;
+
+  if (days === '7day') {
+    startDate = new Date(currentDay.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (days === '24hour') {
+    startDate = new Date(currentDay.getTime() - 24 * 60 * 60 * 1000);
+  } else {
+    throw new Error("Invalid value for 'days'. Use '7day' or '24hour'.");
+  }
+
+  const timeSlots =
+    days === '7day'
+      ? Array.from({ length: 7 }, (_, i) => {
+          const day = new Date(currentDay.getTime() - i * 24 * 60 * 60 * 1000);
+          return {
+            dateHour: day.toISOString().split('T')[0],
+            totalUsers: 0,
+          };
+        }).reverse()
+      : Array.from({ length: 24 }, (_, i) => {
+          const hour = new Date(currentDay.getTime() - i * 60 * 60 * 1000);
+          return {
+            dateHour: hour.toISOString(),
+            totalUsers: 0,
+          };
+        }).reverse();
+
+  const incomeData = await Payment.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startDate, $lte: currentDay },
+      },
+    },
+    {
+      $group: {
+        _id:
+          days === '7day'
+            ? {
+                date: {
+                  $dateToString: {
+                    format: '%Y-%m-%d',
+                    date: '$transactionDate',
+                  },
+                },
+              }
+            : {
+                hour: {
+                  $dateToString: {
+                    format: '%Y-%m-%dT%H:00:00',
+                    date: '$transactionDate',
+                  },
+                },
+              },
+        totalUsers: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        dateHour: days === '7day' ? '$_id.date' : '$_id.hour',
+        totalUsers: 1,
+        _id: 0,
+      },
+    },
+    {
+      $sort: { [days === '7day' ? 'date' : 'hour']: 1 },
+    },
+  ]);
+
+  incomeData.forEach((data) => {
+    if (days === '7day') {
+      const dayData = timeSlots.find((d: any) => d.dateHour === data.dateHour);
+      if (dayData) {
+        dayData.totalUsers = data.totalUsers;
+      }
+    } else if (days === '24hour') {
+      const hourData = timeSlots.find((h: any) => h.dateHour === data.dateHour);
+      if (hourData) {
+        hourData.totalUsers = data.totalUsers;
+      }
+    }
+  });
+
+  return timeSlots;
+};
+
+
+const getBrandEngagement = async (days:string) => {
+  // const days = '7day';
+  const currentDay = new Date();
+  let startDate: Date;
+
+  if (days === '7day') {
+    startDate = new Date(currentDay.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (days === '24hour') {
+    startDate = new Date(currentDay.getTime() - 24 * 60 * 60 * 1000);
+  } else {
+    throw new Error("Invalid value for 'days'. Use '7day' or '24hour'.");
+  }
+
+  const incomeData = await HireCreator.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startDate, $lte: currentDay },
+      },
+    },
+    {
+      $group: {
+        _id:
+          days === '7day'
+            ? {
+                date: {
+                  $dateToString: {
+                    format: '%Y-%m-%d',
+                    date: '$transactionDate',
+                  },
+                },
+              }
+            : {
+                hour: {
+                  $dateToString: {
+                    format: '%Y-%m-%dT%H:00:00',
+                    date: '$transactionDate',
+                  },
+                },
+              },
+        totalUsers: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        dateHour: days === '7day' ? '$_id.date' : '$_id.hour',
+        totalUsers: 1,
+        _id: 0,
+      },
+    },
+    {
+      $sort: { [days === '7day' ? 'date' : 'hour']: 1 },
+    },
+  ]);
+
+  console.log('incomeData==', incomeData);
+
+  const allUsers = await User.countDocuments({ role: 'user' });
+  console.log('allUsers==', allUsers);
+  const parcentTense = (value: number, total: number) => {
+    if (total === 0) return 0;
+    return ((value / total) * 100).toFixed(0);
+  };
+
+  const totalUsers = allUsers || 1; 
+  const totalEngagement = incomeData.reduce((acc, curr) => acc + curr.totalUsers, 0);
+
+
+  const parcenttence = parcentTense(totalEngagement, totalUsers);
+
+
+
+
+  return parcenttence;
 };
 
 
@@ -1235,11 +1526,15 @@ export const paymentService = {
   createPaypalPaymentService,
   reniewPaypalPaymentService,
   refundPaypalPaymentService,
+  transferPaypalPaymentService,
   getAllPaymentService,
   singlePaymentService,
   deleteSinglePaymentService,
   getAllPaymentByCustomerService,
   getAllIncomeRatio,
+  getAllOverview,
+  getBrandEngagement,
+  getAllSubscriptionUsersByWeekly,
   getAllIncomeRatiobyDays,
   createCheckout,
   automaticCompletePayment,
