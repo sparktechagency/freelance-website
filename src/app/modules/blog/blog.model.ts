@@ -92,7 +92,7 @@ const blogSchema = new Schema<TBlog>({
     type: String,
     required: true,
   },
-});
+},{timestamps:true});
 
 const Blog = model<TBlog>('Blog', blogSchema);
 export default Blog;
