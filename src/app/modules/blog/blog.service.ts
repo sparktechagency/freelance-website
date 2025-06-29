@@ -19,26 +19,26 @@ const createBlog = async (files: any, payload: TBlog) => {
       });
       payload.image = image;
     }
-    if (files.bodyImage && files.bodyImage.length > 0) {
-      const image: any = await uploadToS3({
-        file: files.bodyImage[0],
-        fileName: files.bodyImage[0].originalname,
-        folder: 'blogs/',
-      });
-      payload.bodyImage = image;
-    }
-    if (files.upload3Photos && files.upload3Photos.length > 0) {
-      const upload3Photos = await uploadManyToS3(files.upload3Photos, 'blogs/');
-      payload.upload3Photos = upload3Photos;
-    }
-    if (files.ugcImage && files.ugcImage.length > 0) {
-      const image: any = await uploadToS3({
-        file: files.ugcImage[0],
-        fileName: files.ugcImage[0].originalname,
-        folder: 'blogs/',
-      });
-      payload.ugcImage = image;
-    }
+    // if (files.bodyImage && files.bodyImage.length > 0) {
+    //   const image: any = await uploadToS3({
+    //     file: files.bodyImage[0],
+    //     fileName: files.bodyImage[0].originalname,
+    //     folder: 'blogs/',
+    //   });
+    //   payload.bodyImage = image;
+    // }
+    // if (files.upload3Photos && files.upload3Photos.length > 0) {
+    //   const upload3Photos = await uploadManyToS3(files.upload3Photos, 'blogs/');
+    //   payload.upload3Photos = upload3Photos;
+    // }
+    // if (files.ugcImage && files.ugcImage.length > 0) {
+    //   const image: any = await uploadToS3({
+    //     file: files.ugcImage[0],
+    //     fileName: files.ugcImage[0].originalname,
+    //     folder: 'blogs/',
+    //   });
+    //   payload.ugcImage = image;
+    // }
 
 
     const result = await Blog.create(payload);
@@ -46,16 +46,16 @@ const createBlog = async (files: any, payload: TBlog) => {
       const fileDeletePathimage = `${files.image[0].path}`;
       await unlink(fileDeletePathimage);
 
-      const fileDeletePathbodyImage = `${files.bodyImage[0].path}`;
-      await unlink(fileDeletePathbodyImage);
+      // const fileDeletePathbodyImage = `${files.bodyImage[0].path}`;
+      // await unlink(fileDeletePathbodyImage);
 
-      const fileDeletePathupload3Photos =files.upload3Photos.map((file: any) => `${file.path}`);
-      for (const fileDeletePath of fileDeletePathupload3Photos) {
-        await unlink(fileDeletePath);
-      }
+      // const fileDeletePathupload3Photos =files.upload3Photos.map((file: any) => `${file.path}`);
+      // for (const fileDeletePath of fileDeletePathupload3Photos) {
+      //   await unlink(fileDeletePath);
+      // }
 
-      const fileDeletePathugcImage = `${files.ugcImage[0].path}`;
-      await unlink(fileDeletePathugcImage);
+      // const fileDeletePathugcImage = `${files.ugcImage[0].path}`;
+      // await unlink(fileDeletePathugcImage);
       
     }
     return result;
@@ -64,18 +64,18 @@ const createBlog = async (files: any, payload: TBlog) => {
       const fileDeletePathimage = `${files.image[0].path}`;
       await unlink(fileDeletePathimage);
 
-      const fileDeletePathbodyImage = `${files.bodyImage[0].path}`;
-      await unlink(fileDeletePathbodyImage);
+      // const fileDeletePathbodyImage = `${files.bodyImage[0].path}`;
+      // await unlink(fileDeletePathbodyImage);
 
-      const fileDeletePathupload3Photos = files.upload3Photos.map(
-        (file: any) => `${file.path}`,
-      );
-      for (const fileDeletePath of fileDeletePathupload3Photos) {
-        await unlink(fileDeletePath);
-      }
+      // const fileDeletePathupload3Photos = files.upload3Photos.map(
+      //   (file: any) => `${file.path}`,
+      // );
+      // for (const fileDeletePath of fileDeletePathupload3Photos) {
+      //   await unlink(fileDeletePath);
+      // }
 
-      const fileDeletePathugcImage = `${files.ugcImage[0].path}`;
-      await unlink(fileDeletePathugcImage);
+      // const fileDeletePathugcImage = `${files.ugcImage[0].path}`;
+      // await unlink(fileDeletePathugcImage);
     } catch (fsError) {
       console.error('Error accessing or deleting the image file:', fsError);
     }
@@ -178,20 +178,20 @@ const deletedBlogQuery = async (id: string) => {
   const key1 = blog.image.split('amazonaws.com/')[1];
   const deleteImage1:any = await deleteFromS3(key1);
 
-  const key2 = blog.bodyImage.split('amazonaws.com/')[1];
-  const deleteImage2:any = await deleteFromS3(key2);
+  // const key2 = blog.bodyImage.split('amazonaws.com/')[1];
+  // const deleteImage2:any = await deleteFromS3(key2);
 
-  const key3 = blog.ugcImage.split('amazonaws.com/')[1];
-  const deleteImage3:any = await deleteFromS3(key3);
+  // const key3 = blog.ugcImage.split('amazonaws.com/')[1];
+  // const deleteImage3:any = await deleteFromS3(key3);
 
 
-  const keys = blog?.upload3Photos?.map(
-    (key: any) => key.url.split('amazonaws.com/')[1],
-  );
-  const deleteImages: any = await deleteManyFromS3(keys);
-  console.log('deleteImage', deleteImages);
+  // const keys = blog?.upload3Photos?.map(
+  //   (key: any) => key.url.split('amazonaws.com/')[1],
+  // );
+  // const deleteImages: any = await deleteManyFromS3(keys);
+  // console.log('deleteImage', deleteImages);
 
-  if (deleteImage1 && deleteImage2 && deleteImage3 && deleteImages) {
+  if (deleteImage1 ) {
     const result = await Blog.findByIdAndDelete(id);
     return result;
   } else {

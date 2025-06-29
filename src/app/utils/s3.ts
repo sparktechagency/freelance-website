@@ -21,16 +21,24 @@ export const s3Client = new S3Client({
 });
 
 
+export const createNewFileName = (fileName:string)=>{
+  const genaratedNumber = Math.floor(1000000000 + Math.random() * 9000000000);
+  const mainFile = fileName.split('.');
+  const firstPart = `${mainFile[0]}-${genaratedNumber}`;
+  const secondPart = mainFile.slice(-1)[0];
+  const newFileName = `${firstPart}.${secondPart}`;
+  return newFileName;
+
+}
+
+
 //upload a single file
 export const uploadToS3 = async (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   { file, fileName, folder }: { file: any; fileName: string; folder: string },
 ): Promise<string | null> => {
-  const fileKey = `${folder}${fileName}`;
-
- 
-
-  
+  const newFileName = createNewFileName(fileName);
+  const fileKey = `${folder}${newFileName}`;
 
   try {
 
@@ -68,7 +76,9 @@ export const uploadToS3 = async (
       throw new AppError(httpStatus.BAD_REQUEST, 'File Upload failed');
     }
 
-    const url = `https://${config.aws.bucket}.s3.${config.aws.region}.amazonaws.com/${folder}${fileName}`;
+    console.log('upload result==', uploadResult);
+
+    const url = `https://${config.aws.bucket}.s3.${config.aws.region}.amazonaws.com/${folder}${newFileName}`;
 
     return url;
   } catch (error: any) {
@@ -110,8 +120,10 @@ export const uploadManyToS3 = async (
   folder: string,
 ): Promise<{ url: string; key: string }[]> => {
   try {
+    
+  // const newFileName = createNewFileName();
     const checkPromises = files.map(async (file) => {
-      const fileKey = `${folder}${file.originalname}`;
+      const fileKey = `${folder}${file.originalname}12`;
       const headCommand = new HeadObjectCommand({
         Bucket: config.aws.bucket,
         Key: fileKey,
@@ -135,8 +147,9 @@ export const uploadManyToS3 = async (
 
     await Promise.all(checkPromises);
     const uploadPromises = files.map(async ({ path, originalname, mimetype }) => {
-      const newFileName = `${Math.floor(100000 + Math.random() * 900000)}${Date.now()}`;
-      const fileKey = `${folder}${originalname}`;
+      const newkeyName = `${Math.floor(100000 + Math.random() * 900000)}${Date.now()}`;
+      const newFileName = createNewFileName(originalname);
+      const fileKey = `${folder}${newFileName}`;
       const command = new PutObjectCommand({
         Bucket: config.aws.bucket,
         Key: fileKey,
@@ -151,8 +164,8 @@ export const uploadManyToS3 = async (
           `File Upload failed for '${originalname}'`);
       }
 
-      const url = `https://${config.aws.bucket}.s3.${config.aws.region}.amazonaws.com/${folder}${originalname}`;
-      return { url, key: newFileName };
+      const url = `https://${config.aws.bucket}.s3.${config.aws.region}.amazonaws.com/${folder}${newFileName}`;
+      return { url, key: newkeyName };
     });
 
     const uploadedUrls = await Promise.all(uploadPromises);

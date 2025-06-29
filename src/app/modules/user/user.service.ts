@@ -28,7 +28,7 @@ export interface OTPVerifyAndCreateUserProps {
 }
 
 const createUserToken = async (payload: TUserCreate) => {
-  const { role, email, fullName, password } = payload;
+  const { role, email, fullName, password, } = payload;
 
   // user role check
   if (!(role === USER_ROLE.USER )) {
@@ -95,7 +95,7 @@ const createUserToken = async (payload: TUserCreate) => {
     // // console.log({alala})
   });
 
-
+console.log('payload====', payload);
 
   // crete token
   const createUserToken = createToken({
@@ -115,18 +115,18 @@ const otpVerifyAndCreateUser = async ({
   if (!token) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Token not found');
   }
-
+console.log('token', token)
   const decodeData = verifyToken({
     token,
     access_secret: config.jwt_access_secret as string,
   });
-  // // console.log({ decodeData });
+  console.log({ decodeData });
 
   if (!decodeData) {
     throw new AppError(httpStatus.BAD_REQUEST, 'You are not authorised');
   }
 
-  const { password, email, fullName, role, ...rest } = decodeData;
+  const { password, email, fullName, role, profile, ...rest } = decodeData;
 
   const isOtpMatch = await otpServices.otpMatch(email, otp);
 
@@ -160,6 +160,7 @@ const otpVerifyAndCreateUser = async ({
    email,
    fullName,
    role,
+   profile
  };
 
   const user = await User.create(userData);
@@ -214,8 +215,9 @@ const { role, email, fullName, password, ...rest } = payload;
     password: payload.password,
     email: payload.email,
     fullName: payload.fullName,
-    role: 'creator',
+    role: 'creator'
   };
+  console.log('userData', userData);
 
   const user = await User.create(userData);
 

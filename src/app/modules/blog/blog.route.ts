@@ -14,9 +14,9 @@ blogRouter
     //  auth(USER_ROLE.ADMIN),
     upload.fields([
       { name: 'image', maxCount: 1 },
-      { name: 'bodyImage', maxCount: 1 },
-      { name: 'upload3Photos', maxCount: 3 },
-      { name: 'ugcImage', maxCount: 1 },
+      // { name: 'bodyImage', maxCount: 1 },
+      // { name: 'upload3Photos', maxCount: 3 },
+      // { name: 'ugcImage', maxCount: 1 },
     ]),
     blogController.createBlog,
   )
@@ -32,9 +32,9 @@ blogRouter
 
     upload.fields([
       { name: 'image', maxCount: 1 },
-      { name: 'bodyImage', maxCount: 1 },
-      { name: 'upload3Photos', maxCount: 3 },
-      { name: 'ugcImage', maxCount: 1 },
+      // { name: 'bodyImage', maxCount: 1 },
+      // { name: 'upload3Photos', maxCount: 3 },
+      // { name: 'ugcImage', maxCount: 1 },
     ]),
     blogController.updateSingleBlog,
   )

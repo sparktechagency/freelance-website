@@ -24,15 +24,17 @@ const createUploadVideo = catchAsync(async (req, res) => {
 });
 
 const getAllUploadVideo = catchAsync(async (req, res) => {
-  const { meta, result } = await uploadVideoService.getAllUploadVideoQuery(
+  console.log('hit hoise')
+  const result:any = await uploadVideoService.getAllUploadVideoQuery(
     req.query,
   );
+  console.log('result ===', result);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
-    meta: meta,
-    data: result,
+    meta: result?.meta || null,
+    data: result?.result ? result?.result : result || [],
     message: ' All UploadVideo are requered successful!!',
   });
 });

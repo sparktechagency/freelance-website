@@ -11,20 +11,41 @@ const createUploadVideo = async (files: any, payload: TUploadVideo) => {
     console.log('files', files);
 
   try {
- 
-    if (files.videos && files.videos.length > 0) {
-      const videos: any = await uploadManyToS3(files.videos, 'videos/');
-      payload.videos = videos;
-    }
-    const result = await UploadVideo.create(payload);
 
-    if (result) {
-      const allVideo = files.videos.map(
-        (video: any) => `${video.path}`,
-      );
-      await Promise.all(allVideo.map((path: any) => unlink(path)));
+    const isExist = await UploadVideo.findOne({category:payload.category});
+
+    if(isExist){
+      if (files.videos && files.videos.length > 0) {
+        const videos: any = await uploadManyToS3(files.videos, 'videos/');
+        payload.videos = videos;
+      }
+
+      const updateVideos = [...isExist.videos, ...payload.videos];
+      console.log('updateVideos', updateVideos);
+
+      const updatedUploadVideo = await UploadVideo.findByIdAndUpdate(isExist._id, {videos:updateVideos}, {new:true});
+      console.log('updatedUploadVideo', updatedUploadVideo);
+      if (updatedUploadVideo) {
+        const allVideo = files.videos.map((video: any) => `${video.path}`);
+        await Promise.all(allVideo.map((path: any) => unlink(path)));
+      }
+
+      return updatedUploadVideo;
+
+    }else{
+      if (files.videos && files.videos.length > 0) {
+        const videos: any = await uploadManyToS3(files.videos, 'videos/');
+        payload.videos = videos;
+      }
+      const result = await UploadVideo.create(payload);
+
+      if (result) {
+        const allVideo = files.videos.map((video: any) => `${video.path}`);
+        await Promise.all(allVideo.map((path: any) => unlink(path)));
+      }
+      return result;
+
     }
-    return result;
   } catch (error) {
     try {
         const allVideo = files?.videos?.map((video: any) => `${video.path}`);
@@ -37,20 +58,30 @@ const createUploadVideo = async (files: any, payload: TUploadVideo) => {
 };
 
 const getAllUploadVideoQuery = async (query: Record<string, unknown>) => {
-  const UpcreateUploadVideoQuery = new QueryBuilder(
-    UploadVideo.find({}),
-    query,
-  )
-    .search([])
-    .filter()
-    .sort()
-    .paginate()
-    .fields();
+  if(query.category){
+    const result = await UploadVideo.findOne({category:query.category});
+    if (!result) {
+      throw new AppError(404, "Uploaded video not found");
+    }
+    return result;
+  }else{
+    const UpcreateUploadVideoQuery = new QueryBuilder(
+      UploadVideo.find({}),
+      query,
+    )
+      .search([])
+      .filter()
+      .sort()
+      .paginate()
+      .fields();
 
-  const result = await UpcreateUploadVideoQuery.modelQuery;
+    const result = await UpcreateUploadVideoQuery.modelQuery;
 
-  const meta = await UpcreateUploadVideoQuery.countTotal();
-  return { meta, result };
+    const meta = await UpcreateUploadVideoQuery.countTotal();
+    return { meta, result };
+
+  }
+  
 };
 
 const getSingleUploadVideoQuery = async (id: string) => {
@@ -124,71 +155,102 @@ const getSingleUploadVideoQuery = async (id: string) => {
 
 const deletedUploadVideoQuery = async (payload: any) => {
   console.log('payload----', payload);
-  console.log('payload--Imagekeys--', payload.imagesurl);
+  // console.log('payload--Imagekeys--', payload.imagesurl);
 
-  if (!payload.imagesurl || payload.imagesurl.length === 0) {
+  if (!payload.videourl) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'Please provide at least one image key to delete.',
+      'Image is requered to be deleted',
     );
   }
 
-  if (!Array.isArray(payload.imagesurl)) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'Image keys must be an array of strings.',
-    );
+  const key = payload.videourl.split('amazonaws.com/')[1];
+
+  const videoDoc = await UploadVideo.findOne({
+    'videos.url': payload.videourl,
+  });
+
+  console.log('videoDoc', videoDoc);
+
+  if (!videoDoc) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Video not found in the database');
   }
 
-  const keys = payload.imagesurl.map(
-    (key: string) => key.split('amazonaws.com/')[1],
-  );
-  console.log('keys', keys);
-
-  const deleteImage: any = await deleteManyFromS3(keys);
+  const deleteImage: any = await deleteFromS3(key);
   console.log('deleteImage', deleteImage);
+ 
+  console.log('videoDoc', videoDoc);
+
 
   if (deleteImage) {
-    for (let imageurl of payload.imagesurl) {
-      const videoObject = await UploadVideo.findOne({ 'videos.url': imageurl });
-      console.log('videoObject', videoObject);
+    const updatedDoc = await UploadVideo.findOneAndUpdate(
+      { 'videos.url': payload.videourl },
+      { $pull: { videos: { url: payload.videourl } } },
+      { new: true },
+    );
 
-      if (!videoObject) {
-        // Log an error or handle the case where the video object isn't found
-        // but don't necessarily throw an error that stops the entire process
-        // if other keys might still be valid.
-        console.warn(`Video object not found for key: ${imageurl}. Skipping.`);
-        continue; // Move to the next imageKey
-      }
-
-      const videoIndex = videoObject.videos.findIndex(
-        (video) => video.url === imageurl,
-      );
-      console.log('videoIndex***', videoIndex);
-
-      if (videoIndex > -1) {
-        if (videoObject.videos.length === 1) {
-          const result = await UploadVideo.findByIdAndDelete(videoObject._id);
-          console.log('result delete', result);
-          console.log(`Deleted video object with id: ${videoObject._id}`);
-        } else if (videoObject.videos.length > 1) {
-          const result = await UploadVideo.updateOne(
-            { _id: videoObject._id },
-            { $pull: { videos: { url: imageurl } } },
-          );
-          console.log(`Removed video with key: ${imageurl}`);
-          console.log('result update', result);
-        }
-      } else {
-        console.warn(
-          `Video with key: ${imageurl} not found in videoObject.videos array.`,
-        );
-      }
-    }
-    return 'All specified videos processed successfully.';
+    return updatedDoc;
   } else {
-    throw new AppError(404, 'Error deleting from S3!');
+    throw new AppError(httpStatus.NOT_FOUND, 'Video not found in the database');
   }
+
+
+  // if (!Array.isArray(payload.imagesurl)) {
+  //   throw new AppError(
+  //     httpStatus.BAD_REQUEST,
+  //     'Image keys must be an array of strings.',
+  //   );
+  // }
+
+  // const keys = payload.imagesurl.map(
+  //   (key: string) => key.split('amazonaws.com/')[1],
+  // );
+  // console.log('keys', keys);
+
+  // const deleteImage: any = await deleteManyFromS3(keys);
+  // console.log('deleteImage', deleteImage);
+
+  // if (deleteImage) {
+  //   for (let imageurl of payload.imagesurl) {
+  //     const videoObject = await UploadVideo.findOne({ 'videos.url': imageurl });
+  //     console.log('videoObject', videoObject);
+
+  //     if (!videoObject) {
+  //       // Log an error or handle the case where the video object isn't found
+  //       // but don't necessarily throw an error that stops the entire process
+  //       // if other keys might still be valid.
+  //       console.warn(`Video object not found for key: ${imageurl}. Skipping.`);
+  //       continue; // Move to the next imageKey
+  //     }
+
+  //     const videoIndex = videoObject.videos.findIndex(
+  //       (video) => video.url === imageurl,
+  //     );
+  //     console.log('videoIndex***', videoIndex);
+
+  //     if (videoIndex > -1) {
+  //       if (videoObject.videos.length === 1) {
+  //         const result = await UploadVideo.findByIdAndDelete(videoObject._id);
+  //         console.log('result delete', result);
+  //         console.log(`Deleted video object with id: ${videoObject._id}`);
+  //       } else if (videoObject.videos.length > 1) {
+  //         const result = await UploadVideo.updateOne(
+  //           { _id: videoObject._id },
+  //           { $pull: { videos: { url: imageurl } } },
+  //         );
+  //         console.log(`Removed video with key: ${imageurl}`);
+  //         console.log('result update', result);
+  //       }
+  //     } else {
+  //       console.warn(
+  //         `Video with key: ${imageurl} not found in videoObject.videos array.`,
+  //       );
+  //     }
+  //   }
+  //   return 'All specified videos processed successfully.';
+  // } else {
+  //   throw new AppError(404, 'Error deleting from S3!');
+  // }
 };
 
 
