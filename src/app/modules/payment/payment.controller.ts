@@ -16,6 +16,7 @@ import { deleteFromS3 } from '../../utils/s3';
 import mongoose from 'mongoose';
 import { cancelTemplete, successTemplete } from '../../../templete/templete';
 import { calculateEndDate } from '../subscription/subcription.utils';
+import { notificationService } from '../notification/notification.service';
 
 
 const addPayment = catchAsync(async (req, res, next) => {
@@ -364,7 +365,16 @@ const successPage = async (req: Request, res: Response) => {
     if (!payment) {
       throw new AppError(httpStatus.BAD_REQUEST, 'Payment not created!');
     }
-    await session.commitTransaction(); 
+
+    const notificationData = {
+      role: 'admin',
+      message: `New Hire Creator created and payment is completed`,
+      type: 'success',
+    };
+
+    await notificationService.createNotification(notificationData, session);
+
+    await session.commitTransaction();
     res.send(successTemplete);
 
   } catch (error) {

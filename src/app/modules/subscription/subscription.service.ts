@@ -12,19 +12,22 @@ import mongoose from 'mongoose';
 import { Payment } from '../payment/payment.model';
 
 
-const createSubscription = async (payload: any) => {
+const createSubscription = async (payload: any, session?: any) => {
   console.log('payload==subscription', payload);
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // const session = await mongoose.startSession();
+  let createdSession = session || (await mongoose.startSession());
+  if (!createdSession.inTransaction()) {
+    createdSession.startTransaction();
+  }
 
   try {
-    const user = await User.findById(payload.userId).session(session);
+    const user = await User.findById(payload.userId).session(createdSession);
     if (!user) {
       throw new AppError(404, 'User not found!');
     }
 
     const existingPackage = await Package.findById(payload.packageId).session(
-      session,
+      createdSession,
     );
     if (!existingPackage) {
       throw new AppError(404, 'This Service is not found!');
@@ -38,7 +41,7 @@ const createSubscription = async (payload: any) => {
         userId: payload.userId,
         type: existingPackage.type,
         isDeleted: false,
-      }).session(session);
+      }).session(createdSession);
 
       if (existingSubscription) {
         throw new AppError(400, 'You already have a Subscription!');
@@ -57,7 +60,7 @@ const createSubscription = async (payload: any) => {
         userId: payload.userId,
         isDeleted: false,
         endDate: { $gt: new Date() },
-      }).session(session);
+      }).session(createdSession);
 
       if (runningubscription) {
         throw new AppError(400, 'Your Subscription is already running!');
@@ -70,7 +73,7 @@ const createSubscription = async (payload: any) => {
 
    
 
-    const result = await Subscription.create([payload], { session });
+    const result = await Subscription.create([payload], { session:createdSession });
     console.log('result==', result);
 
   //   const paymentData = {
@@ -89,15 +92,20 @@ const createSubscription = async (payload: any) => {
       throw new AppError(httpStatus.BAD_REQUEST, 'Subscription create faild!!!!');
     }
 
-    await session.commitTransaction();
+    await createdSession.commitTransaction();
 
     return result[0];
   } catch (error) {
-    await session.abortTransaction();
+    if (createdSession.inTransaction()) {
+      await createdSession.abortTransaction();
+    }
+    console.error('Error during subscription creation transaction:', error);
+    createdSession.endSession();
     throw error;
-  } finally {
-    session.endSession();
-  }
+  } 
+  // finally {
+  //   createdSession.endSession();
+  // }
 };
 
 

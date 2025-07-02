@@ -15,7 +15,11 @@ hireCreatorRouter
     hireCreatorController.createHireCreator,
   )
   .get('/', hireCreatorController.getAllHireCreator)
-  .get('/user', auth(USER_ROLE.USER), hireCreatorController.getAllHireCreatorByUser)
+  .get(
+    '/user',
+    auth(USER_ROLE.USER),
+    hireCreatorController.getAllHireCreatorByUser,
+  )
   .get('/:id', hireCreatorController.getSingleHireCreator)
   .patch(
     '/:id',
@@ -24,13 +28,30 @@ hireCreatorRouter
   )
   .patch(
     '/approved/:id',
-     auth(USER_ROLE.ADMIN),
+    auth(USER_ROLE.ADMIN),
     hireCreatorController.approvedSingleHireCreator,
   )
   .patch(
     '/cancel/:id',
-     auth(USER_ROLE.ADMIN),
+    auth(USER_ROLE.ADMIN),
     hireCreatorController.cancelSingleHireCreator,
+  )
+  .patch(
+    '/uploadVideos/:id',
+    auth(USER_ROLE.CREATOR),
+    upload.fields([{ name: 'uploadVideos' }]),
+    hireCreatorController.assignTaskCreatorUploadVideosByCreator,
+  )
+  .patch(
+    '/revision/:id',
+    auth(USER_ROLE.USER),
+    hireCreatorController.assignTaskRevisionByUser,
+  )
+  .patch(
+    '/re-uploadVideos/:id',
+    auth(USER_ROLE.CREATOR),
+    upload.fields([{ name: 'uploadVideos' }]),
+    hireCreatorController.assignTaskCreatorReSubmitUploadVideosByCreator,
   )
   .delete(
     '/:id',

@@ -106,77 +106,77 @@ const singleAssignTaskCreatorApprovedByAdmin = catchAsync(async (req, res) => {
   });
 });
 
-const assignTaskCreatorUploadVideosByCreator = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  const { userId } = req.user;
-  const imageFiles = req.files as {
-    [fieldname: string]: Express.Multer.File[];
-  };
+// const assignTaskCreatorUploadVideosByCreator = catchAsync(async (req, res) => {
+//   const { id } = req.params;
+//   const { userId } = req.user;
+//   const imageFiles = req.files as {
+//     [fieldname: string]: Express.Multer.File[];
+//   };
 
-  const result =
-    await assignTaskCreatorService.assignTaskCreatorUploadVideosByCreator(
-      id,
-      userId,
-      imageFiles,
-    );
+//   const result =
+//     await assignTaskCreatorService.assignTaskCreatorUploadVideosByCreator(
+//       id,
+//       userId,
+//       imageFiles,
+//     );
 
-  sendResponse(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    data: result,
-    message: 'Single AssignTaskCreator  are upload Video successful!!',
-  });
-});
+//   sendResponse(res, {
+//     success: true,
+//     statusCode: httpStatus.OK,
+//     data: result,
+//     message: 'Single AssignTaskCreator  are upload Video successful!!',
+//   });
+// });
 
-const assignTaskRevisionByUser = catchAsync(async (req, res) => {
-  const { id } = req.params;
-  const { userId } = req.user;
-  const payload:any = {};
-  if(req.query?.revisionText){
-    payload['revisionText'] = req.query.revisionText;
-  }
-  if (req.query?.status) {
-    payload['status'] = req.query.status;
-  }
+// const assignTaskRevisionByUser = catchAsync(async (req, res) => {
+//   const { id } = req.params;
+//   const { userId } = req.user;
+//   const payload:any = {};
+//   if(req.query?.revisionText){
+//     payload['revisionText'] = req.query.revisionText;
+//   }
+//   if (req.query?.status) {
+//     payload['status'] = req.query.status;
+//   }
 
-  const result = await assignTaskCreatorService.assignTaskRevisionByUser(
-    id,
-    userId,
-    payload,
-  );
+//   const result = await assignTaskCreatorService.assignTaskRevisionByUser(
+//     id,
+//     userId,
+//     payload,
+//   );
 
-  sendResponse(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    data: result,
-    message: 'Single AssignTaskCreator is successful!!',
-  });
-});
+//   sendResponse(res, {
+//     success: true,
+//     statusCode: httpStatus.OK,
+//     data: result,
+//     message: 'Single AssignTaskCreator is successful!!',
+//   });
+// });
 
 
-const assignTaskCreatorReSubmitUploadVideosByCreator = catchAsync(
-  async (req, res) => {
-    const { id } = req.params;
-    const { userId } = req.user;
-    const imageFiles = req.files as {
-      [fieldname: string]: Express.Multer.File[];
-    };
+// const assignTaskCreatorReSubmitUploadVideosByCreator = catchAsync(
+//   async (req, res) => {
+//     const { id } = req.params;
+//     const { userId } = req.user;
+//     const imageFiles = req.files as {
+//       [fieldname: string]: Express.Multer.File[];
+//     };
 
-    const result =
-      await assignTaskCreatorService.assignTaskCreatorReSubmitUploadVideosByCreator(
-        id,
-        userId,
-        imageFiles,
-      );
+//     const result =
+//       await assignTaskCreatorService.assignTaskCreatorReSubmitUploadVideosByCreator(
+//         id,
+//         userId,
+//         imageFiles,
+//       );
 
-    sendResponse(res, {
-      success: true,
-      statusCode: httpStatus.OK,
-      data: result,
-      message: 'Single AssignTaskCreator  are upload Video successful!!',
-    });
-  },
-);
+//     sendResponse(res, {
+//       success: true,
+//       statusCode: httpStatus.OK,
+//       data: result,
+//       message: 'Single AssignTaskCreator  are upload Video successful!!',
+//     });
+//   },
+// );
 
 const deleteSingleAssignTaskCreator = catchAsync(async (req, res) => {
     const {userId} = req.user
@@ -199,8 +199,8 @@ export const assignTaskCreatorController = {
   getSingleHireCreatorToAssignTaskCreator,
   singleAssignTaskCreatorApprovedCancel,
   singleAssignTaskCreatorApprovedByAdmin,
-  assignTaskCreatorUploadVideosByCreator,
-  assignTaskRevisionByUser,
-  assignTaskCreatorReSubmitUploadVideosByCreator,
+  // assignTaskCreatorUploadVideosByCreator,
+  // assignTaskRevisionByUser,
+  // assignTaskCreatorReSubmitUploadVideosByCreator,
   deleteSingleAssignTaskCreator,
 };

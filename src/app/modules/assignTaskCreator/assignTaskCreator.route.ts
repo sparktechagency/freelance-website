@@ -39,28 +39,28 @@ assignTaskCreatorRouter
      auth(USER_ROLE.ADMIN),
     assignTaskCreatorController.singleAssignTaskCreatorApprovedByAdmin,
   )
-  .patch(
-    '/uploadVideos/:id',
-    auth(USER_ROLE.CREATOR),
-    upload.fields([{ name: 'uploadVideos' }]),
-    assignTaskCreatorController.assignTaskCreatorUploadVideosByCreator,
-  )
-  .patch(
-    '/revision/:id',
-    auth(USER_ROLE.USER),
-    assignTaskCreatorController.assignTaskRevisionByUser,
-  )
-  .patch(
-    '/revision/:id',
-    auth(USER_ROLE.USER),
-    assignTaskCreatorController.assignTaskRevisionByUser,
-  )
-  .patch(
-    '/re-uploadVideos/:id',
-    auth(USER_ROLE.CREATOR),
-    upload.fields([{ name: 'uploadVideos' }]),
-    assignTaskCreatorController.assignTaskCreatorReSubmitUploadVideosByCreator,
-  )
+  // .patch(
+  //   '/uploadVideos/:id',
+  //   auth(USER_ROLE.CREATOR),
+  //   upload.fields([{ name: 'uploadVideos' }]),
+  //   assignTaskCreatorController.assignTaskCreatorUploadVideosByCreator,
+  // )
+  // .patch(
+  //   '/revision/:id',
+  //   auth(USER_ROLE.USER),
+  //   assignTaskCreatorController.assignTaskRevisionByUser,
+  // )
+  // .patch(
+  //   '/revision/:id',
+  //   auth(USER_ROLE.USER),
+  //   assignTaskCreatorController.assignTaskRevisionByUser,
+  // )
+  // .patch(
+  //   '/re-uploadVideos/:id',
+  //   auth(USER_ROLE.CREATOR),
+  //   upload.fields([{ name: 'uploadVideos' }]),
+  //   assignTaskCreatorController.assignTaskCreatorReSubmitUploadVideosByCreator,
+  // )
   .delete(
     '/:id',
     auth(USER_ROLE.CREATOR),

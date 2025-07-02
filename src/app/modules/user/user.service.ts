@@ -15,6 +15,7 @@ import { createToken, verifyToken } from '../../utils/tokenManage';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import Otp from '../otp/otp.model';
+import { imageUrlGenarate } from '../../utils/imageUrl';
 
 export type IFilter = {
   searchTerm?: string;
@@ -340,6 +341,7 @@ const updateUser = async (id: string, payload: Partial<TUser>) => {
   console.log('payload=', payload);
   const { role, email, ...rest } = payload;
   console.log('rest', rest);
+  rest.profile = imageUrlGenarate(rest.profile as string);
 
   const user = await User.findByIdAndUpdate(id, rest, { new: true });
 

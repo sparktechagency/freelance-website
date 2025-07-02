@@ -102,6 +102,77 @@ const cancelSingleHireCreator = catchAsync(async (req, res) => {
   });
 });
 
+const assignTaskCreatorUploadVideosByCreator = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.user;
+  const imageFiles = req.files as {
+    [fieldname: string]: Express.Multer.File[];
+  };
+
+  const result =
+    await hireCreatorService.assignTaskCreatorUploadVideosByCreator(
+      id,
+      userId,
+      imageFiles,
+    );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Single AssignTaskCreator  are upload Video successful!!',
+  });
+});
+
+const assignTaskRevisionByUser = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.user;
+  const payload: any = {};
+  if (req.query?.revisionText) {
+    payload['revisionText'] = req.query.revisionText;
+  }
+  if (req.query?.status) {
+    payload['status'] = req.query.status;
+  }
+
+  const result = await hireCreatorService.assignTaskRevisionByUser(
+    id,
+    userId,
+    payload,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Single AssignTaskCreator is successful!!',
+  });
+});
+
+const assignTaskCreatorReSubmitUploadVideosByCreator = catchAsync(
+  async (req, res) => {
+    const { id } = req.params;
+    const { userId } = req.user;
+    const imageFiles = req.files as {
+      [fieldname: string]: Express.Multer.File[];
+    };
+
+    const result =
+      await hireCreatorService.assignTaskCreatorReSubmitUploadVideosByCreator(
+        id,
+        userId,
+        imageFiles,
+      );
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      data: result,
+      message: 'Single AssignTaskCreator  are upload Video successful!!',
+    });
+  },
+);
+
 const deleteSingleHireCreator = catchAsync(async (req, res) => {
   const result = await hireCreatorService.deletedHireCreatorQuery(req.params.id);
 
@@ -121,5 +192,8 @@ export const hireCreatorController = {
   updateSingleHireCreator,
   approvedSingleHireCreator,
   cancelSingleHireCreator,
+  assignTaskCreatorUploadVideosByCreator,
+  assignTaskRevisionByUser,
+  assignTaskCreatorReSubmitUploadVideosByCreator,
   deleteSingleHireCreator,
 };

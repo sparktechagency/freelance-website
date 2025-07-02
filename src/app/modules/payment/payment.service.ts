@@ -345,11 +345,12 @@ const transferPaypalPaymentService = async (email: string, amount: number) => {
         {
           recipient_type: 'EMAIL',
           amount: {
-            value: 100,
+            value: 50,
             // value: amount.toFixed(2),
             currency: 'USD', 
           },
-          receiver: 'sb-dx6z737480442@personal.example.com',
+          receiver: 'user@gmail.com',
+          // receiver: 'sb-dx6z737480442@personal.example.com',
           note: `Payment of 100 USD`,
           sender_item_id: `item_${Math.random().toString(36).substr(2, 9)}`,
         },
@@ -372,7 +373,20 @@ const transferPaypalPaymentService = async (email: string, amount: number) => {
     }
   } catch (error:any) {
     console.error('Error executing PayPal transfer:', error.message);
-    throw new Error('Error executing PayPal transfer');
+    console.error('Error executing PayPal response:', error.response);
+    if (error.response) {
+      const errorDetails = error.response.result;
+      if (errorDetails && errorDetails.name === 'INVALID_RECEIVER') {
+        console.error(`Error: No PayPal account found for email: ${email}`);
+        throw new Error(`No PayPal account found for email: ${email}`);
+      } else {
+        console.error('Error executing PayPal transfer:', errorDetails);
+        throw new Error('Error executing PayPal transfer');
+      }
+    } else {
+      console.error('Error executing PayPal transfer:', error.message);
+      throw new Error('Error executing PayPal transfer');
+    }
   }
 };
 

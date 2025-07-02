@@ -7,6 +7,8 @@ import { deleteFromS3, deleteManyFromS3, uploadManyToS3, uploadToS3 } from '../.
 import { access, unlink } from 'fs/promises';
 import { User } from '../user/user.models';
 import mongoose from 'mongoose';
+import { populate } from 'dotenv';
+import { imageUrlGenarate } from '../../utils/imageUrl';
 
 const createCreator = async (files: any, payload: TCreator) => {
   const session = await mongoose.startSession(); 
@@ -50,7 +52,7 @@ const createCreator = async (files: any, payload: TCreator) => {
 
     if (files.profile && files.profile.length > 0) {
       const image = files.profile[0].path.replace(/^public[\\/]/, '');
-      payload.profile = image;
+      payload.profile = imageUrlGenarate(image);
     }
 
     console.log('payload', payload);
@@ -110,7 +112,12 @@ const createCreator = async (files: any, payload: TCreator) => {
 
 
 const getAllCreatorQuery = async (query: Record<string, unknown>) => {
-  const CreatorQuery = new QueryBuilder(Creator.find(), query)
+  const CreatorQuery = new QueryBuilder(
+    Creator.find().populate({path:'userId', select:"profile"}).select(
+      'accountHolderName phone email country status',
+    ),
+    query,
+  )
     .search([])
     .filter()
     .sort()
@@ -128,7 +135,10 @@ const getCreatorMeQuery = async (userId: string) => {
 };
 
 const getSingleCreatorQuery = async (id: string) => {
-  const creator: any = await Creator.findById(id);
+  const creator: any = await Creator.findById(id).populate({
+    path: 'userId',
+    select: 'profile',
+  });
   if (!creator) {
     throw new AppError(404, 'Creator Not Found!!');
   }

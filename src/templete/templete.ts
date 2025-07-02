@@ -1,3 +1,5 @@
+import config from "../app/config";
+
 export const successTemplete = `<!DOCTYPE html>
 <html lang="en">
   <head>
@@ -66,7 +68,7 @@ export const successTemplete = `<!DOCTYPE html>
       <div class="success-icon">✔️</div>
       <h1>Thank You for Your Payment!</h1>
       <p>Your transaction was successful.</p>
-      <a href="http://10.0.70.35:8020/" class="btn-home"
+      <a href=${config.frontend_ip_address} class="btn-home"
         >Return to Home</a
       >
     </div>

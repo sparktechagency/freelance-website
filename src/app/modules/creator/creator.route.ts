@@ -37,7 +37,7 @@ creatorRouter
   )
   .patch(
     '/approved-cancel/:id',
-    //  auth(USER_ROLE.ADMIN),
+     auth(USER_ROLE.ADMIN),
     creatorController.approvedCancelSingleCreator,
   )
   .delete(

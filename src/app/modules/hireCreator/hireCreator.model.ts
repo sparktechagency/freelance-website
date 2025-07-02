@@ -66,33 +66,73 @@ const lastContentInfoSchema = new Schema({
   tergetAudience: { type: String, required: true },
 });
 
-const hireCreatorSchema = new Schema({
-  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  subscriptionId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Subscription',
-    required: true,
+const uploads = new Schema({
+  key: { type: String, required: true },
+  url: { type: String, required: true },
+});
+
+const hireCreatorSchema = new Schema(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    subscriptionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Subscription',
+      required: true,
+    },
+    brandInfo: { type: brandInfoSchema, required: true },
+    brandSocial: { type: brandSocialSchema, required: true },
+    contentInfo: { type: contentInfoSchema, required: true },
+    characteristicInfo: { type: characteristicInfoSchema, required: true },
+    doAndDonts: { type: doAndDontsSchema, required: true },
+    lastContentInfo: { type: lastContentInfoSchema, required: true },
+    status: {
+      type: String,
+      required: true,
+      enum: [
+        'draft',
+        'pending',
+        'approved',
+        'cancel',
+        'ongoing',
+        'delivered',
+        'revision',
+        'completed',
+      ],
+      default: 'draft',
+    },
+    paymentStatus: {
+      type: String,
+      required: true,
+      enum: ['pending', 'paid', 'Failed'],
+      default: 'pending',
+    },
+    takeVideoCount: { type: Number, required: true, default: 0 },
+    creatorId: { type: Schema.Types.ObjectId, ref: 'Creator', required: false },
+    creatorUserId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
+    creatorPaymentStatus: {
+      type: String,
+      required: true,
+      enum: ['pending', 'paid', 'failed'],
+      default: 'pending',
+    },
+    creatorPrice: { type: Number, required: false },
+    uploadedFiles: {
+      type: [uploads],
+      default: [],
+      required: false,
+    },
+    isScript: {
+      type: String,
+      required: false,
+      default: null,
+    },
   },
-  brandInfo: { type: brandInfoSchema, required: true },
-  brandSocial: { type: brandSocialSchema, required: true },
-  contentInfo: { type: contentInfoSchema, required: true },
-  characteristicInfo: { type: characteristicInfoSchema, required: true },
-  doAndDonts: { type: doAndDontsSchema, required: true },
-  lastContentInfo: { type: lastContentInfoSchema, required: true },
-  status: {
-    type: String,
-    required: true,
-    enum: ['draft', 'pending', 'approved', 'cancel', 'ongoing', 'delivered', 'revision', 'completed'],
-    default: 'draft',
-  },
-  paymentStatus: {
-    type: String,
-    required: true,
-    enum: ['pending', 'paid', 'Failed'],
-    default: 'pending',
-  },
-  takeVideoCount: { type: Number, required: true, default: 0 },
-},{ timestamps: true });
+  { timestamps: true },
+);
 
 const HireCreator = mongoose.model('HireCreator', hireCreatorSchema);
 

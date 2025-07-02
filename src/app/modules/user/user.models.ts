@@ -8,7 +8,7 @@ const userSchema = new Schema<TUser>(
   {
     profile: {
       type: String,
-      default: '/uploads/profile/default-user.jpg',
+      default: `http://${config.ip}:${config.port}/uploads/profile/default-user.jpg`,
     },
     fullName: {
       type: String,
@@ -48,7 +48,6 @@ const userSchema = new Schema<TUser>(
       required: false,
       default: '',
     },
-    
   },
   {
     timestamps: true,
