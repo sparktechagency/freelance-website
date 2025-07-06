@@ -7,7 +7,11 @@ const fileUpload = (uploadDirectory: string) => {
   }
   const storage = multer.diskStorage({
     destination: function (req: Request, file, cb) {
-      cb(null, uploadDirectory);
+      if (file.fieldname === 'profile') {
+        cb(null, './public/uploads/profile');
+      } else {
+        cb(null, uploadDirectory);
+      }
     },
     filename: function (req: Request, file, cb) {
       const parts = file.originalname.split('.');
@@ -23,9 +27,11 @@ const fileUpload = (uploadDirectory: string) => {
     },
   });
   
+
+
    const upload = multer({
      storage,
-     limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB limit for video files
+     limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB limit for video files
      fileFilter: (req: Request, file, cb) => {
        const allowedMimeTypes = [
          'image/gif',

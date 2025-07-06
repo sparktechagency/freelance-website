@@ -1,4 +1,11 @@
-export type TFaq = {
+import { Types } from "mongoose";
+
+export type TCreator = {
+  userId: Types.ObjectId;
+  profile: string;
+  fullName: any;
+  email: string;
+  password: any;
   phone: string;
   dateOfBirth: string;
   country: string;
@@ -21,7 +28,18 @@ export type TFaq = {
   instragramLink: string;
   othersSocialLink: string;
   portfolioLink: string;
-  ugcExampleVideo: string[];
+  ugcExampleVideo: {
+    key: string;
+    url: string;
+  }[];
   introductionvideo: string;
+  bankType: string;
+  accountHolderName: string;
+  accountNumber: string;
+  swiftCode: string;
+  bankName: string;
+  iban: string;
+  paypalEmail: string;
+  status: string;
 };
  

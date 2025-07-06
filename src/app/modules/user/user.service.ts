@@ -15,6 +15,7 @@ import { createToken, verifyToken } from '../../utils/tokenManage';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import Otp from '../otp/otp.model';
+import { imageUrlGenarate } from '../../utils/imageUrl';
 
 export type IFilter = {
   searchTerm?: string;
@@ -28,7 +29,7 @@ export interface OTPVerifyAndCreateUserProps {
 }
 
 const createUserToken = async (payload: TUserCreate) => {
-  const { role, email, fullName, password } = payload;
+  const { role, email, fullName, password, } = payload;
 
   // user role check
   if (!(role === USER_ROLE.USER )) {
@@ -95,7 +96,7 @@ const createUserToken = async (payload: TUserCreate) => {
     // // console.log({alala})
   });
 
-
+console.log('payload====', payload);
 
   // crete token
   const createUserToken = createToken({
@@ -115,18 +116,18 @@ const otpVerifyAndCreateUser = async ({
   if (!token) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Token not found');
   }
-
+console.log('token', token)
   const decodeData = verifyToken({
     token,
     access_secret: config.jwt_access_secret as string,
   });
-  // // console.log({ decodeData });
+  console.log({ decodeData });
 
   if (!decodeData) {
     throw new AppError(httpStatus.BAD_REQUEST, 'You are not authorised');
   }
 
-  const { password, email, fullName, role, ...rest } = decodeData;
+  const { password, email, fullName, role, profile, ...rest } = decodeData;
 
   const isOtpMatch = await otpServices.otpMatch(email, otp);
 
@@ -140,7 +141,7 @@ const otpVerifyAndCreateUser = async ({
     });
   });
 
-  if (!(role === USER_ROLE.USER )) {
+  if (!(role === USER_ROLE.USER  || role === USER_ROLE.CREATOR)) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
   }
 
@@ -160,6 +161,7 @@ const otpVerifyAndCreateUser = async ({
    email,
    fullName,
    role,
+   profile
  };
 
   const user = await User.create(userData);
@@ -214,8 +216,9 @@ const { role, email, fullName, password, ...rest } = payload;
     password: payload.password,
     email: payload.email,
     fullName: payload.fullName,
-    role: payload.role
+    role: 'creator'
   };
+  console.log('userData', userData);
 
   const user = await User.create(userData);
 
@@ -338,6 +341,7 @@ const updateUser = async (id: string, payload: Partial<TUser>) => {
   console.log('payload=', payload);
   const { role, email, ...rest } = payload;
   console.log('rest', rest);
+  rest.profile = imageUrlGenarate(rest.profile as string);
 
   const user = await User.findByIdAndUpdate(id, rest, { new: true });
 
@@ -472,13 +476,26 @@ const deleteMyAccount = async (id: string, payload: DeleteAccountPayload) => {
   return userDeleted;
 };
 
-const blockedUser = async (id: string) => {
+
+const blockedUser = async (id: string, userId: string) => {
   const existUser: TUser | null = await User.findById(id);
 
   if (!existUser) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
 
+  const blocker: TUser | null = await User.findById(userId);
+
+  if (!blocker) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Admin not found');
+  }
+
+  if (existUser.role === blocker.role) {
+    throw new AppError(httpStatus.FORBIDDEN, 'You cannot block this Person!!');
+  }
+  if (existUser.role === 'super_admin') {
+    throw new AppError(httpStatus.FORBIDDEN, 'You cannot block this Person!!');
+  }
 
   const blockUnblockSwich = existUser.isActive ? false : true;
 

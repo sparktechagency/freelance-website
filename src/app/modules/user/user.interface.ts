@@ -1,4 +1,4 @@
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 import { USER_ROLE } from './user.constants';
 
@@ -17,12 +17,11 @@ export interface TUserCreate {
   phone: string;
   role: (typeof USER_ROLE)[keyof typeof USER_ROLE];
   address: string;
-  
 }
 
 export interface TUser extends TUserCreate {
   _id: string;
-  image: string;
+  profile: string;
   isActive: boolean;
   isDeleted: boolean;
 }

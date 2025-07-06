@@ -1,73 +1,104 @@
-// import catchAsync from '../../utils/catchAsync';
-// import sendResponse from '../../utils/sendResponse';
-// import httpStatus from 'http-status';
-// import { faqService } from './faq.service';
+import catchAsync from '../../utils/catchAsync';
+import sendResponse from '../../utils/sendResponse';
+import httpStatus from 'http-status';
+import { creatorService } from './creator.service';
 
-// const createFaq = catchAsync(async (req, res) => {
-//   const payload = req.body;
+const createCreator = catchAsync(async (req, res) => {
+  const payload = req.body;
+  const imageFiles = req.files as {
+    [fieldname: string]: Express.Multer.File[];
+  };
+  const result = await creatorService.createCreator(imageFiles, payload);
 
-//   const result = await faqService.createFaq(payload);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Creator Create successful!!',
+  });
+});
 
-//   sendResponse(res, {
-//     success: true,
-//     statusCode: httpStatus.OK,
-//     data: result,
-//     message: 'FAQ Create successful!!',
-//   });
-// });
+const getAllCreator = catchAsync(async (req, res) => {
+  const { meta, result } = await creatorService.getAllCreatorQuery(req.query);
 
-// const getAllFaq = catchAsync(async (req, res) => {
-//   const { meta, result } = await faqService.getAllFaqQuery(req.query);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    meta: meta,
+    data: result,
+    message: ' All Creator are requered successful!!',
+  });
+});
 
-//   sendResponse(res, {
-//     success: true,
-//     statusCode: httpStatus.OK,
-//     meta: meta,
-//     data: result,
-//     message: ' All Faq are requered successful!!',
-//   });
-// });
+const getCreatorMe = catchAsync(async (req, res) => {
+  const {userId} = req.user
+  const result = await creatorService.getCreatorMeQuery(userId);
 
-// const getSingleFaq = catchAsync(async (req, res) => {
-//   const result = await faqService.getSingleFaqQuery(req.params.id);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Creator are info successful!!',
+  });
+});
 
-//   sendResponse(res, {
-//     success: true,
-//     statusCode: httpStatus.OK,
-//     data: result,
-//     message: 'Single Faq are requered successful!!',
-//   });
-// });
+const getSingleCreator = catchAsync(async (req, res) => {
+  const result = await creatorService.getSingleCreatorQuery(req.params.id);
 
-// const updateSingleFaq = catchAsync(async (req, res) => {
-//   const { id } = req.params;
-//   const payload = req.body;
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Single Creator are requered successful!!',
+  });
+});
 
-//   const result = await faqService.updateSingleFaqQuery(id, payload);
+const updateSingleCreator = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const payload = req.body;
 
-//   sendResponse(res, {
-//     success: true,
-//     statusCode: httpStatus.OK,
-//     data: result,
-//     message: 'Single Faq  are updated successful!!',
-//   });
-// });
+  const result = await creatorService.updateSingleCreatorQuery(id, payload);
 
-// const deleteSingleFaq = catchAsync(async (req, res) => {
-//   const result = await faqService.deletedFaqQuery(req.params.id);
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Single Creator  are updated successful!!',
+  });
+});
 
-//   sendResponse(res, {
-//     success: true,
-//     statusCode: httpStatus.OK,
-//     data: result,
-//     message: 'Deleted Single Faq are successful!!',
-//   });
-// });
 
-// export const faqController = {
-//   createFaq,
-//   getAllFaq,
-//   getSingleFaq,
-//   updateSingleFaq,
-//   deleteSingleFaq,
-// };
+const approvedCancelSingleCreator = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const status = req.query.status as string;
+
+  const result = await creatorService.approvedCancelSingleCreator(id, status);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Single Creator  are updated successful!!',
+  });
+});
+
+const deleteSingleCreator = catchAsync(async (req, res) => {
+  const result = await creatorService.deletedCreatorQuery(req.params.id);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Deleted Single Creator are successful!!',
+  });
+});
+
+export const creatorController = {
+  createCreator,
+  getAllCreator,
+  getCreatorMe,
+  getSingleCreator,
+  updateSingleCreator,
+  approvedCancelSingleCreator,
+  deleteSingleCreator,
+};

@@ -9,13 +9,14 @@ import globalErrorHandler from './app/middleware/globalErrorhandler';
 import notFound from './app/middleware/notfound';
 import router from './app/routes';
 import path from 'path';
+import { serverRunningTemplete } from './templete/templete';
 // import { paymentController } from './app/modules/payment/payment.controller';
 
 const app: Application = express();
 
 
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
+// app.set('views', path.join(__dirname, 'views'));
+// app.set('view engine', 'ejs');
 
 // app.post(
 //   '/api/v1/ducky-webhook-payment',
@@ -46,7 +47,7 @@ app.use('/api/v1', router);
 
 app.get('/', (req: Request, res: Response) => {
   // res.send('server-running.ejs');
-  res.render('server-running.ejs');
+  res.send(serverRunningTemplete);
 });
 app.use(globalErrorHandler);
 

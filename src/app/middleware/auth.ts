@@ -28,6 +28,9 @@ const auth = (...userRoles: string[]) => {
     if (!isUserExist) {
       throw new AppError(httpStatus.NOT_FOUND, 'user not found');
     }
+    if (isUserExist.role !== role) {
+      throw new AppError(httpStatus.NOT_FOUND, 'user role not match');
+    }
     const user = await User.isUserActive(email);
     if (!user) {
       throw new AppError(httpStatus.BAD_REQUEST, 'User not found!!');

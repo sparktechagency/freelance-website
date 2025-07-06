@@ -1,9 +1,14 @@
-export type TFaq = {
-  title: string;
-  subtitle: string;
-  price: number;
-  image: string;
-  benefits: string[];
-  isDeleted: boolean;
+import { Types } from "mongoose";
+
+export type TSubscription = {
   type: string;
+  userId: Types.ObjectId;
+  packageId: Types.ObjectId;
+  price: number;
+  status: string;
+  endDate: Date;
+  videoCount: number;
+  takeVideoCount: number;
+  isDeleted: boolean;
+  transactionId:string;
 };

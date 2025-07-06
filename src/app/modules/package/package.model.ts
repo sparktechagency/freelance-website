@@ -31,6 +31,15 @@ const faqSchema = new Schema<TPackage>({
     required: true,
   },
   benefits: [TBenefits],
+  type: {
+    type: String,
+    required: true,
+    enum: ['one_time', 'monthly', 'yearly'],
+  },
+  videoCount: {
+    type: Number,
+    required: true,
+  },
   isDeleted: {
     type: Boolean,
     default: false,

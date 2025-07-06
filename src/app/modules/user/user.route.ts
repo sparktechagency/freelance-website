@@ -14,6 +14,7 @@ export const userRoutes = Router();
 userRoutes
   .post(
     '/create',
+    upload.single('profile'),
     validateRequest(userValidation?.userValidationSchema),
     userController.createUser,
   )
@@ -22,10 +23,7 @@ userRoutes
     validateRequest(resentOtpValidations.verifyOtpZodSchema),
     userController.userCreateVarification,
   )
-  .post(
-    '/create-creator',
-    userController.creatorUser,
-  )
+  .post('/create-creator', userController.creatorUser)
   // .post(
   //   '/swich-role',
   //   auth(USER_ROLE.CUSTOMER, USER_ROLE.BUSINESS),
@@ -54,7 +52,7 @@ userRoutes
       USER_ROLE.SUB_ADMIN,
       USER_ROLE.SUPER_ADMIN,
     ),
-    upload.single('image'),
+    upload.single('profile'),
     parseData(),
     userController.updateMyProfile,
   )
@@ -72,7 +70,7 @@ userRoutes
       USER_ROLE.SUPER_ADMIN,
     ),
     userController.deleteMyAccount,
-  )
+  );
   
 
 // export default userRoutes;

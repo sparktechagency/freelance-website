@@ -7,18 +7,47 @@ const paymentRouter = express.Router();
 
 paymentRouter
   .post('/add-payment', auth(USER_ROLE.USER), paymentController.addPayment)
-  .post('/create-stripe-payment', auth(USER_ROLE.USER), paymentController.createStripePayment)
+  .post(
+    '/create-paypal-payment',
+    auth(USER_ROLE.USER),
+    paymentController.createPaypalPayment,
+  )
+  .post(
+    '/reniew-paypal-payment/:id',
+    auth(USER_ROLE.USER),
+    paymentController.reniewPaypalPayment,
+  )
+  .post(
+    '/refund-paypal-payment',
+    // auth(USER_ROLE.USER),
+    paymentController.refundPaypalPayment,
+  )
+  .post(
+    '/transfer-paypal-payment',
+    // auth(USER_ROLE.USER),
+    paymentController.transferPaypalPayment,
+  )
 
   .get('/success', paymentController.successPage)
-  .get('/cancel', paymentController.cancelPage)
+  .get('/cancel', paymentController.cancelPaymentPage)
+  .get('/reniew-success', paymentController.reniewSuccessPage)
+  .get('/reniew-cancel', paymentController.reniewCancelPaymentPage)
 
-  .get('/', 
-    // auth(USER_ROLE.ADMIN), 
-    paymentController.getAllPayment)
+  .get(
+    '/',
+    // auth(USER_ROLE.ADMIN),
+    paymentController.getAllPayment,
+  )
+  .get('/overview-all', paymentController.overviewAll)
+  .get('/brand-engagement', paymentController.getBrandEngagement)
   .get('/all-income-rasio', paymentController.getAllIncomeRasio)
+  .get(
+    '/all-subsription-users-rasio',
+    paymentController.getAllSubscrptionUserRasioBydays,
+  )
   .get('/all-income-rasio-by-days', paymentController.getAllIncomeRasioBydays)
   .get(
-    '/all-earning-rasio',     
+    '/all-earning-rasio',
     auth(USER_ROLE.ADMIN),
     paymentController.getAllEarningRasio,
   )

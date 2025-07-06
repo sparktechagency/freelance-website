@@ -8,6 +8,13 @@ import httpStatus from 'http-status';
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
   // console.log("user body", req.body);
+ 
+
+  if (req?.file) {
+    req.body.profile = storeFile('profile', req?.file?.filename);
+  }
+
+  
   const createUserToken = await userService.createUserToken(req.body);
 
   sendResponse(res, {
@@ -126,7 +133,7 @@ const getMyProfile = catchAsync(async (req: Request, res: Response) => {
 
 const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
   if (req?.file) {
-    req.body.image = storeFile('profile', req?.file?.filename);
+    req.body.profile = storeFile('profile', req?.file?.filename);
   }
 
   const result = await userService.updateUser(req?.user?.userId, req.body);
@@ -139,7 +146,8 @@ const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
 });
 
 const blockedUser = catchAsync(async (req: Request, res: Response) => {
-  const result = await userService.blockedUser(req.params.id);
+  const {userId} = req.user;
+  const result = await userService.blockedUser(req.params.id, userId);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,

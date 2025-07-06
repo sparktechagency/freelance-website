@@ -3,10 +3,10 @@ import path from 'path';
 dotenv.config({ path: path.join((process.cwd(), '.env')) });
 
 const aws = {
-  accessKeyId: process.env.S3_BUCKET_ACCESS_KEY,
-  secretAccessKey: process.env.S3_BUCKET_SECRET_ACCESS_KEY,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_ACCESS_SECRET_KEY,
   region: process.env.AWS_REGION,
-  bucket: process.env.AWS_BUCKET_NAME,
+  bucket: process.env.S3_BUCKET_NAME,
 };
 
 const stripe = {
@@ -18,6 +18,7 @@ export default {
   NODE_ENV: process.env.NODE_ENV,
   port: process.env.PORT,
   ip: process.env.IP,
+  frontend_ip_address: process.env.FRONTEND_IP_ADDRESS,
   database_url: process.env.DATABASE_URL,
   server_url: process.env.SERVER_URL,
   client_Url: process.env.CLIENT_URL,
@@ -38,5 +39,6 @@ export default {
   stripe,
   googleApiKey: process.env.GOOGLEAPI,
   shipment_key: process.env.SHIPMENT_KEY,
+  PAYPAL_MODE: process.env.PAYPAL_MODE,
   // user_jwt_token: process.env.USER_JWT_TOKEN,
 };

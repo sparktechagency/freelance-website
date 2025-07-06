@@ -14,6 +14,13 @@ import { Withdraw } from '../withdraw/withdraw.model';
 import cron from 'node-cron';
 import { notificationService } from '../notification/notification.service';
 import axios from 'axios';
+import Package from '../package/package.model';
+import paypalClient from '../../utils/paypal';
+import paypal from '@paypal/checkout-server-sdk';
+import Subscription from '../subscription/subscription.model';
+import * as paypalPayouts from '@paypal/payouts-sdk';
+import HireCreator from '../hireCreator/hireCreator.model';
+
 
 type SessionData = Stripe.Checkout.Session;
 
@@ -29,142 +36,36 @@ export const stripe = new Stripe(
 // console.log('stripe==', stripe);
 
 const addPaymentService = async (payload: any) => {
-  // const session = await mongoose.startSession();
-  // session.startTransaction();
-
-  // // console.log('payment data', payload);
-
-  // try {
-  //   // console.log('console.log-1');
-  //   const newPayload: any = {};
-  //   console.log('payload==', payload);
-
-  //   const user = await User.findById(payload.userId).session(session);
-  //   if (!user) {
-  //     throw new AppError(400, 'User is not found!');
-  //   }
-
-  //   if (user.role !== 'user') {
-  //     throw new AppError(400, 'User is not authorized as a User!!');
-  //   }
-
-  //   newPayload.orderDate = new Date();
-
-  //   const productlist = await Promise.all(
-  //     payload.cartIds.map(async (cartId: any) => {
-  //       // const singleProduct = await Product.findById(product.productId).session(
-  //       //   session,
-  //       // );
-
-  //       const cartItem = await Cart.findById(cartId).session(session);
-
-  //       if (!cartItem) {
-  //         throw new AppError(404, 'Cart is not Found!!');
-  //       }
-
-  //       const singleProduct = await Product.findById(
-  //         cartItem.productId,
-  //       ).session(session);
-
-  //       if (!singleProduct) {
-  //         throw new AppError(404, 'Product is not Found!!');
-  //       }
-
-  //       console.log(
-  //         'singleProduct==availableStock',
-  //         singleProduct.availableStock,
-  //       );
-  //       console.log('cartItem.quantity', cartItem.quantity);
-
-  //       if (Number(singleProduct.availableStock) < cartItem.quantity) {
-  //         throw new AppError(403, 'Insufficient stock for the product!');
-  //       }
-
-  //       return {
-  //         productId: cartItem.productId,
-  //         price: cartItem.price * cartItem.quantity,
-  //         quantity: cartItem.quantity,
-  //       };
-  //     }),
-  //   );
-
-  //   newPayload.productList = productlist;
-  //   newPayload.userId = payload.userId;
-  //   newPayload.phone_number = payload.phone_number;
-  //   newPayload.zip_code = payload.zip_code;
-  //   newPayload.street_name = payload.street_name;
-  //   newPayload.state_code = payload.state_code;
-  //   newPayload.locality = payload.locality;
-  //   newPayload.house_number = payload.house_number;
-  //   newPayload.given_name = payload.given_name;
-  //   newPayload.family_name = payload.family_name;
-  //   newPayload.country = payload.country;
-  //   newPayload.address2 = payload.address2;
-  //   newPayload.business = payload.business;
-
-
-  //   const totalAmount = productlist.reduce(
-  //     (acc, product) => acc + product.price,
-  //     0,
-  //   );
-  //   newPayload.totalAmount = totalAmount;
-    
-  //   if (!payload.shippingCost) {
-  //     throw new AppError(400, 'Shipping cost is required!');
-  //   } else {
-  //     payload.shippingCost = Number(payload.shippingCost);
-  //   }
-
-  //    newPayload.totalAmount = newPayload.totalAmount + payload.shippingCost;
-  //   console.log('newPayload with totalAmount==', newPayload);
-
-  //   const order = await Order.create([newPayload], { session });
-
-  //   if (!order[0]) {
-  //     throw new AppError(400, 'Failed to create order!');
-  //   }
-
-
-
-  //   const paymentInfo = {
-  //     orderId: order[0]._id,
-  //     amount: order[0].totalAmount,
-  //     cartIds: payload.cartIds,
-  //   };
-
-  //   console.log('======stripe payment', paymentInfo);
-  //   const checkoutResult: any = await createCheckout(
-  //     payload.userId,
-  //     paymentInfo,
-  //   );
-
-  //   if (!checkoutResult) {
-  //     throw new AppError(400, 'Failed to create checkout session!');
-  //   }
-
-  //   // Commit transaction
-  //   await session.commitTransaction();
-  //   session.endSession();
-  //   return checkoutResult;
-  // } catch (error) {
-  //   console.error('Transaction Error:', error);
-  //   await session.abortTransaction();
-  //   session.endSession();
-  //   throw error;
-  // }
-};
-
-
-const createStripeService = async (payload: any) => {
   const session = await mongoose.startSession();
   session.startTransaction();
+
+
   try {
+    const user = await User.findById(payload.userId).session(session);
+    if (!user) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'User not found');
+    }
     
-    const result = 'success';
-    // Commit transaction
+    const packageExist = await Package.findById(payload.packageId).session(session);
+    if (!packageExist) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Package not found');
+    }
+
+    const paymentData = {
+      userId: user._id,
+      method: payload.method,
+      amount: packageExist.price,
+       status: 'paid',
+       transactionId: payload.transactionId,
+       transactionDate: new Date(),
+       packageId: packageExist._id
+    }
+
+    const payment = await Payment.create([paymentData], { session });
+  
     await session.commitTransaction();
     session.endSession();
-    return result;
+    return payment;
   } catch (error) {
     console.error('Transaction Error:', error);
     await session.abortTransaction();
@@ -172,6 +73,367 @@ const createStripeService = async (payload: any) => {
     throw error;
   }
 };
+
+
+const createPaypalPaymentService = async (payload: any) => {
+  console.log('payload==', payload);
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+
+  // try {
+  //   console.log('console-1')
+  //   const assecToken = await getPaypalAccessToken();
+  //     console.log('assecToken==', assecToken);
+
+  //       const order = await axios.post(
+  //         `https://sandbox.paypal.com/v2/checkout/orders`,
+  //         {
+  //           intent: 'CAPTURE',
+  //           purchase_units: [
+  //             {
+  //               amount: {
+  //                 currency_code: 'USD',
+  //                 value: '100',
+  //               },
+  //               metadata: {
+  //                 user_id: '12345', 
+  //                 source: 'website',
+  //                 other_info: 'Additional information here',
+  //               },
+  //             },
+  //           ],
+  //         },
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${assecToken}`,
+  //             'Content-Type': 'application/json',
+  //           },
+  //         },
+  //       );
+
+  //       console.log('order==', order);
+  //       console.log('order data==', order.data);
+  //       console.log('order data id==', order.data.id);
+
+  //       if (!order.data || !order.data.id) {
+  //         throw new AppError(400, 'Order creation failed.');
+  //       }
+
+  //       const url = order.data.links.find(
+  //         (link: any) => link.rel === 'approve',
+  //       );
+
+  //       if (!url) {
+  //         throw new AppError(400, 'Order approval link not found.');
+  //       }
+
+  //   //     const capture = await axios.post(
+  //   //       `${BASE_URL}/v2/checkout/orders/${order.data.id}/capture`,
+  //   //       {},
+  //   //       {
+  //   //         headers: {
+  //   //           Authorization: `Bearer ${assecToken}`,
+  //   //           'Content-Type': 'application/json',
+  //   //         },
+  //   //       },
+  //   //     );
+
+  //   //     console.log('capture==', capture);
+
+  //   //     if (!capture.data) {
+  //   //       throw new AppError(400, 'Capture failed.');
+  //   //     }
+
+  //   // Commit transaction
+  //   await session.commitTransaction();
+  //   session.endSession();
+  //   return url;
+  // } catch (error) {
+  //   console.error('Transaction Error:', error);
+  //   await session.abortTransaction();
+  //   session.endSession();
+  //   throw error;
+  // }
+
+
+  try {
+    const request = new paypal.orders.OrdersCreateRequest();
+    request.prefer('return=representation');
+    request.requestBody({
+      intent: 'CAPTURE',
+      purchase_units: [
+        {
+          amount: {
+            currency_code: 'USD',
+            value: payload.amount,
+          },
+          // description: `Payment for Campaign: ${result._id}`,
+          custom_id: payload.userId.toString(),
+          // reference_id: ENUM_PAYMENT_PURPOSE.CAMPAIGN_RUN,
+        },
+      ],
+      application_context: {
+        brand_name: 'Your Business Name',
+        landing_page: 'LOGIN',
+        user_action: 'PAY_NOW',
+        // return_url: `${config.paypal.payment_capture_url}`,
+        // cancel_url: `${config.paypal.paypal_campaign_run_payment_cancel_url}`,
+        return_url: `http://10.0.70.163:5002/api/v1/payment/success?orderId=${payload.orderId}`,
+        cancel_url: `http://10.0.70.163:5002/api/v1/payment/cancel?orderId=${payload.orderId}`,
+      },
+    });
+
+    const response = await paypalClient.execute(request);
+    const approvalUrl = response.result.links.find(
+      (link: any) => link.rel === 'approve',
+    )?.href;
+
+    if (!approvalUrl) {
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'PayPal payment creation failed: No approval URL found',
+      );
+    }
+
+    return { url: approvalUrl };
+  } catch (error:any) {
+    console.error('PayPal Payment Error:', error);
+    throw new AppError(error.statusCode, error.message);
+  }
+
+
+};
+
+
+const reniewPaypalPaymentService = async (id:string, userId:string) => {
+  console.log('id==', id);
+  console.log('userId==', userId);
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  
+  try {
+    const subscription = await Subscription.findById(id);
+    if (!subscription) {
+      throw new AppError(
+        httpStatus.NOT_FOUND,
+        'Subscription not found!!',
+      );
+    }
+
+    if(subscription.userId.toString() !== userId.toString()){
+      throw new AppError(httpStatus.BAD_REQUEST, 'You are not valid user for reniew this subscription!!');
+    }
+
+
+    const request = new paypal.orders.OrdersCreateRequest();
+    request.prefer('return=representation');
+    request.requestBody({
+      intent: 'CAPTURE',
+      purchase_units: [
+        {
+          amount: {
+            currency_code: 'USD',
+            value: String(subscription.price),
+          },
+          // description: `Payment for Campaign: ${result._id}`,
+          custom_id: userId.toString(),
+          // reference_id: ENUM_PAYMENT_PURPOSE.CAMPAIGN_RUN,
+        },
+      ],
+      application_context: {
+        brand_name: 'Your Business Name',
+        landing_page: 'LOGIN',
+        user_action: 'PAY_NOW',
+        // return_url: `${config.paypal.payment_capture_url}`,
+        // cancel_url: `${config.paypal.paypal_campaign_run_payment_cancel_url}`,
+        return_url: `http://10.0.70.163:5002/api/v1/payment/reniew-success?subscriptionId=${subscription._id}`,
+        cancel_url: `http://10.0.70.163:5002/api/v1/payment/reniew-cancel?subscriptionId=${subscription._id}`,
+      },
+    });
+
+    const response = await paypalClient.execute(request);
+    const approvalUrl = response.result.links.find(
+      (link: any) => link.rel === 'approve',
+    )?.href;
+
+    if (!approvalUrl) {
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'PayPal payment creation failed: No approval URL found',
+      );
+    }
+
+    return { url: approvalUrl };
+  } catch (error:any) {
+    console.error('PayPal Payment Error:', error);
+    throw new AppError(
+      error.statusCode,
+      error.message,
+    );
+  }
+};
+
+
+// Refund Service Function
+const refundPaypalPaymentService = async (
+  captureId: string,
+  amount?: number, 
+) => {
+  try {
+
+    console.log('captureId==', captureId);
+    console.log('amount==', amount);
+    if (!captureId) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Capture ID is required for refund.',
+      );
+    }
+    if (amount && amount <= 0) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Refund amount must be greater than zero.',
+      );
+    }
+    const refundRequest = new paypal.payments.CapturesRefundRequest(captureId);
+
+    const requestBody: any = {
+      amount: {
+        currency_code: 'USD',
+        value: amount ? amount.toFixed(2) : '0.00',
+      },
+    };
+
+    refundRequest.requestBody(requestBody);
+
+    const response = await paypalClient.execute(refundRequest);
+
+    if (response.statusCode === 201 && response.result.status === 'COMPLETED') {
+      return "Refund successful.";
+    } else {
+      return {
+        success: false,
+        message: 'Refund failed.',
+        error: response.result || 'Unknown error',
+      };
+    }
+  } catch (error: any) {
+    console.error('PayPal Refund Error:', error);
+
+    if (error instanceof AppError) {
+      throw error;
+    }
+
+    if (error.statusCode && error.message) {
+      throw new AppError(error.statusCode, error.message);
+    } 
+  }
+};
+
+
+const transferPaypalPaymentService = async (email: string, amount: number) => {
+  try {
+
+    const requestBody:any = {
+      sender_batch_header: {
+        email_subject: 'You have a payment',
+        sender_batch_id: `batch_${Math.random().toString(36).substr(2, 9)}`,
+      },
+      items: [
+        {
+          recipient_type: 'EMAIL',
+          amount: {
+            value: 50,
+            // value: amount.toFixed(2),
+            currency: 'USD', 
+          },
+          receiver: 'user@gmail.com',
+          // receiver: 'sb-dx6z737480442@personal.example.com',
+          note: `Payment of 100 USD`,
+          sender_item_id: `item_${Math.random().toString(36).substr(2, 9)}`,
+        },
+      ],
+    };
+
+    const payoutRequest = new paypalPayouts.payouts.PayoutsPostRequest();
+    payoutRequest.requestBody(requestBody);
+
+    const response = await paypalClient.execute(payoutRequest);
+    console.log('response==', response);
+    console.log('response==', response.result);
+
+    if (response.statusCode === 201) {
+      console.log('Payment transfer was successful.');
+      return response.result;
+    } else {
+      console.error('Failed to transfer funds.');
+      throw new Error('Failed to transfer funds');
+    }
+  } catch (error:any) {
+    console.error('Error executing PayPal transfer:', error.message);
+    console.error('Error executing PayPal response:', error.response);
+    if (error.response) {
+      const errorDetails = error.response.result;
+      if (errorDetails && errorDetails.name === 'INVALID_RECEIVER') {
+        console.error(`Error: No PayPal account found for email: ${email}`);
+        throw new Error(`No PayPal account found for email: ${email}`);
+      } else {
+        console.error('Error executing PayPal transfer:', errorDetails);
+        throw new Error('Error executing PayPal transfer');
+      }
+    } else {
+      console.error('Error executing PayPal transfer:', error.message);
+      throw new Error('Error executing PayPal transfer');
+    }
+  }
+};
+
+
+
+// const checkPayoutStatus = async (batchId: string) => {
+//   try {
+//     // Create a GET request to retrieve the payout status
+//     const payoutStatusRequest = new paypalPayouts.payouts.PayoutsGetRequest(
+//       batchId,
+//     );
+
+//     // Execute the request
+//     const response = await paypalClient.execute(payoutStatusRequest);
+
+//     // Check if the response is successful
+//     if (response.statusCode === 200) {
+//       // Log the current status of the payout
+//       console.log('Payout Status:', response.result.batch_header.batch_status);
+
+//       // Handle different batch statuses
+//       switch (response.result.batch_header.batch_status) {
+//         case 'SUCCESS':
+//           console.log('Payout was successful!');
+//           break;
+//         case 'PENDING':
+//           console.log('Payout is still processing.');
+//           break;
+//         case 'FAILED':
+//           console.error('Payout failed.');
+//           break;
+//         default:
+//           console.log('Payout status is unknown.');
+//       }
+
+//       return response.result;
+//     } else {
+//       console.error('Failed to fetch payout status.');
+//       throw new Error('Failed to fetch payout status');
+//     }
+//   } catch (error:any) {
+//     console.error('Error checking payout status:', error.message);
+//     throw new Error('Error checking payout status');
+//   }
+// };
+
+
 
 const getAllPaymentService = async (query: Record<string, unknown>) => {
   const PaymentQuery = new QueryBuilder(
@@ -267,6 +529,45 @@ const getAllIncomeRatio = async (year: number) => {
   // console.log({ months });
 
   return months;
+};
+
+
+const getAllOverview = async () => {
+
+  const totalCreator = await User.countDocuments({ role: 'creator' });
+  const totalBrand = await User.countDocuments({ role: 'user' });
+  const totalProject = await HireCreator.countDocuments({status: "delivered"});
+  const totalRevenue = await Payment.aggregate([
+    {
+      $match: { status: 'paid', isRefund:false },
+    },
+    {
+      $group: {
+        _id: null,
+        totalIncome: { $sum: '$amount' },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        totalIncome: 1,
+      },
+    },
+  ]);
+  const totalSubscription = await Subscription.countDocuments({
+    status: ['running', 'completed'],
+  });
+
+
+
+  
+  return {
+    totalCreator,
+    totalBrand,
+    totalProject,
+    totalRevenue: totalRevenue.length > 0 ? totalRevenue[0].totalIncome : 0,
+    totalSubscription,
+  };
 };
 
 // const getAllIncomeRatiobyDays = async (days: string) => {
@@ -456,6 +757,169 @@ const getAllIncomeRatiobyDays = async (days: string) => {
   });
 
   return timeSlots;
+};
+
+const getAllSubscriptionUsersByWeekly = async (days: string) => {
+  const currentDay = new Date();
+  let startDate: Date;
+
+  if (days === '7day') {
+    startDate = new Date(currentDay.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (days === '24hour') {
+    startDate = new Date(currentDay.getTime() - 24 * 60 * 60 * 1000);
+  } else {
+    throw new Error("Invalid value for 'days'. Use '7day' or '24hour'.");
+  }
+
+  const timeSlots =
+    days === '7day'
+      ? Array.from({ length: 7 }, (_, i) => {
+          const day = new Date(currentDay.getTime() - i * 24 * 60 * 60 * 1000);
+          return {
+            dateHour: day.toISOString().split('T')[0],
+            totalUsers: 0,
+          };
+        }).reverse()
+      : Array.from({ length: 24 }, (_, i) => {
+          const hour = new Date(currentDay.getTime() - i * 60 * 60 * 1000);
+          return {
+            dateHour: hour.toISOString(),
+            totalUsers: 0,
+          };
+        }).reverse();
+
+  const incomeData = await Payment.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startDate, $lte: currentDay },
+      },
+    },
+    {
+      $group: {
+        _id:
+          days === '7day'
+            ? {
+                date: {
+                  $dateToString: {
+                    format: '%Y-%m-%d',
+                    date: '$transactionDate',
+                  },
+                },
+              }
+            : {
+                hour: {
+                  $dateToString: {
+                    format: '%Y-%m-%dT%H:00:00',
+                    date: '$transactionDate',
+                  },
+                },
+              },
+        totalUsers: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        dateHour: days === '7day' ? '$_id.date' : '$_id.hour',
+        totalUsers: 1,
+        _id: 0,
+      },
+    },
+    {
+      $sort: { [days === '7day' ? 'date' : 'hour']: 1 },
+    },
+  ]);
+
+  incomeData.forEach((data) => {
+    if (days === '7day') {
+      const dayData = timeSlots.find((d: any) => d.dateHour === data.dateHour);
+      if (dayData) {
+        dayData.totalUsers = data.totalUsers;
+      }
+    } else if (days === '24hour') {
+      const hourData = timeSlots.find((h: any) => h.dateHour === data.dateHour);
+      if (hourData) {
+        hourData.totalUsers = data.totalUsers;
+      }
+    }
+  });
+
+  return timeSlots;
+};
+
+
+const getBrandEngagement = async (days:string) => {
+  // const days = '7day';
+  const currentDay = new Date();
+  let startDate: Date;
+
+  if (days === '7day') {
+    startDate = new Date(currentDay.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } else if (days === '24hour') {
+    startDate = new Date(currentDay.getTime() - 24 * 60 * 60 * 1000);
+  } else {
+    throw new Error("Invalid value for 'days'. Use '7day' or '24hour'.");
+  }
+
+  const incomeData = await HireCreator.aggregate([
+    {
+      $match: {
+        createdAt: { $gte: startDate, $lte: currentDay },
+      },
+    },
+    {
+      $group: {
+        _id:
+          days === '7day'
+            ? {
+                date: {
+                  $dateToString: {
+                    format: '%Y-%m-%d',
+                    date: '$transactionDate',
+                  },
+                },
+              }
+            : {
+                hour: {
+                  $dateToString: {
+                    format: '%Y-%m-%dT%H:00:00',
+                    date: '$transactionDate',
+                  },
+                },
+              },
+        totalUsers: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        dateHour: days === '7day' ? '$_id.date' : '$_id.hour',
+        totalUsers: 1,
+        _id: 0,
+      },
+    },
+    {
+      $sort: { [days === '7day' ? 'date' : 'hour']: 1 },
+    },
+  ]);
+
+  console.log('incomeData==', incomeData);
+
+  const allUsers = await User.countDocuments({ role: 'user' });
+  console.log('allUsers==', allUsers);
+  const parcentTense = (value: number, total: number) => {
+    if (total === 0) return 0;
+    return ((value / total) * 100).toFixed(0);
+  };
+
+  const totalUsers = allUsers || 1; 
+  const totalEngagement = incomeData.reduce((acc, curr) => acc + curr.totalUsers, 0);
+
+
+  const parcenttence = parcentTense(totalEngagement, totalUsers);
+
+
+
+
+  return parcenttence;
 };
 
 
@@ -1073,12 +1537,18 @@ const getAllEarningRatio = async (year: number, businessId: string) => {
 
 export const paymentService = {
   addPaymentService,
-  createStripeService,
+  createPaypalPaymentService,
+  reniewPaypalPaymentService,
+  refundPaypalPaymentService,
+  transferPaypalPaymentService,
   getAllPaymentService,
   singlePaymentService,
   deleteSinglePaymentService,
   getAllPaymentByCustomerService,
   getAllIncomeRatio,
+  getAllOverview,
+  getBrandEngagement,
+  getAllSubscriptionUsersByWeekly,
   getAllIncomeRatiobyDays,
   createCheckout,
   automaticCompletePayment,
