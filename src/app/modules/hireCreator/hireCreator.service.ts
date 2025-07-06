@@ -749,6 +749,7 @@ const createHireCreator = async (files: any, payload: any) => {
 //   }
 // };
 
+// name, contact, email, country, status
 
 const getAllHireCreatorQuery = async (query: Record<string, unknown>) => {
   const HireCreatorQuery = new QueryBuilder(
@@ -798,7 +799,9 @@ const getAllHireCreatorByUserQuery = async (
 const getSingleHireCreatorQuery = async (id: string) => {
   const hireCreator: any = await HireCreator.findById(id)
     .populate('userId')
-    .populate('subscriptionId');
+    .populate('subscriptionId')
+    .populate('creatorId')
+    .populate({path:'creatorUserId', select:'fullName email address phone'});
   if (!hireCreator) {
     throw new AppError(404, 'HireCreator Not Found!!');
   }

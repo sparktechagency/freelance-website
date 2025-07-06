@@ -94,10 +94,14 @@ const createAssignTaskCreator = async (payload: any) => {
 const getAllAssignTaskCreatorQuery = async (query: Record<string, unknown>) => {
   const AssignTaskCreatorQuery = new QueryBuilder(
     AssignTaskCreator.find({})
-      .populate('creatorId')
-      .populate('creatorUserId')
-      .populate('hireCreatorId')
-      .populate('hireCreatorUserId'),
+      // .populate('creatorId')
+      // .populate('creatorUserId')
+      // .populate('hireCreatorId')
+      .populate({
+        path: 'hireCreatorUserId',
+        select:
+          'fullName email address phone',
+      }),
     query,
   )
     .search([])
