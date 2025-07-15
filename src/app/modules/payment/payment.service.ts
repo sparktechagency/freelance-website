@@ -179,8 +179,8 @@ const createPaypalPaymentService = async (payload: any) => {
         user_action: 'PAY_NOW',
         // return_url: `${config.paypal.payment_capture_url}`,
         // cancel_url: `${config.paypal.paypal_campaign_run_payment_cancel_url}`,
-        return_url: `http://10.0.70.163:5002/api/v1/payment/success?orderId=${payload.orderId}`,
-        cancel_url: `http://10.0.70.163:5002/api/v1/payment/cancel?orderId=${payload.orderId}`,
+        return_url: `http://10.10.7.30:5002/api/v1/payment/success?orderId=${payload.orderId}`,
+        cancel_url: `http://10.10.7.30:5002/api/v1/payment/cancel?orderId=${payload.orderId}`,
       },
     });
 

@@ -260,12 +260,33 @@ const updateMessages = async (id: string, payload: Partial<IMessages>) => {
 };
 
 // Get messages by chat ID
-const getMessagesByChatId = async (chatId: string) => {
-  console.log('chatId', chatId);
-  const result = await Message.find({ chatId: chatId })
-    .populate('taskId')
-    .sort({ createdAt: -1 });
-  return result;
+// const getMessagesByChatId = async (chatId: string) => {
+//   console.log('chatId', chatId);
+//   const result = await Message.find({ chatId: chatId })
+//     .sort({ createdAt: -1 });
+//   return result;
+// };
+const getMessagesByChatId = async (
+  query: Record<string, unknown>,
+  chatId: string,
+) => {
+  query.sort = '-createdAt';
+  const TaskPostQuery = new QueryBuilder(
+    Message.find({ chatId: chatId }).populate({
+      path: 'sender',
+      select: 'fullName image role',
+    }),
+    query,
+  )
+    .search([''])
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const result = await TaskPostQuery.modelQuery;
+  const meta = await TaskPostQuery.countTotal();
+  return { meta, result};
 };
 
 // Get message by ID

@@ -1,9 +1,18 @@
-import redis from 'redis';
+// import { createClient } from 'redis';
 
-const client = redis.createClient({
-  url:"redis://localhost:6379"
-});
+// const redisClient =  createClient({
+//   url: 'redis://localhost:6666',
+// });
 
-client.on('error', (err) => console.log('Redis Client Error', err));
+// redisClient.on('error', (err) => console.error('❌ Redis Client Error:', err));
 
-export default client;
+// (async () => {
+//   try {
+//     await redisClient.connect(); // ✅ required to initialize the connection
+//     console.log('✅ Redis connected');
+//   } catch (err) {
+//     console.error('Failed to connect to Redis:', err);
+//   }
+// })();
+
+// export default redisClient;

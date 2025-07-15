@@ -73,7 +73,7 @@ const getAllMessages = catchAsync(async (req, res) => {
 
 // Get messages by chat ID
 const getMessagesByChatId = catchAsync(async (req, res) => {
-  const result = await messageService.getMessagesByChatId(req.params.chatId);
+  const result = await messageService.getMessagesByChatId( req.query, req.params.chatId);
   sendResponse(res, {
     statusCode: 200,
     success: true,
