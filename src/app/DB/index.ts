@@ -1,3 +1,4 @@
+import Settings from "../modules/settings/settings.model";
 import { User } from "../modules/user/user.models";
 
 
@@ -9,20 +10,28 @@ const superAdminData = {
   role: 'admin',
 };
 
+const settingData = {
+  privacyPolicy: '',
+  aboutUs: '',
+  support: '',
+  termsOfService: '',
+};
+  
 
 
 export const createSuperAdmin = async()=>{
-
     const existSuperAdmin = await User.findOne({ email: superAdminData.email });
-    if (!existSuperAdmin) {
+    const existSettings = await Settings.findOne({});
+    if (!existSuperAdmin || !existSettings) {
       const user = await User.create(superAdminData);
+      const setting = await Settings.create(settingData);
 
-      if (!user) {
-        throw new Error('Super Admin creation failed!');
+      if (!user || !setting) {
+        throw new Error('Super Admin creation/setting failed!');
       }
-      console.log('Super Admin created successfully');
+      console.log('Super Admin and settings created successfully');
     } else {
-      console.log('Super Admin already exists');
+      console.log('Super Admin and settings already exists');
     }
-
+  
 }

@@ -28,6 +28,7 @@ export interface OTPVerifyAndCreateUserProps {
   token: string;
 }
 
+
 const createUserToken = async (payload: TUserCreate) => {
   const { role, email, fullName, password, } = payload;
 

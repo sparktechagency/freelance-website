@@ -5,76 +5,76 @@ import QueryBuilder from '../../builder/QueryBuilder';
 import { User } from '../user/user.models';
 import { TReview } from './ratings.interface';
 import { Review } from './ratings.model';
+import Car from '../car/car.model';
 // import Business from '../business/business.model';
 
 const createReviewService = async (payload: TReview) => {
-  // try {
-  //   // console.log('Payload:', payload);
-  //   const customer = await User.findById(payload.customerId);
-  //   if (!customer) {
-  //     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
-  //   }
-  //   const business = await Business.findById(payload.businessId);
-  //   if (!business) {
-  //     throw new AppError(httpStatus.NOT_FOUND, 'Business not found!');
-  //   }
-  //   // console.log({ business });
+  try {
+    // console.log('Payload:', payload);
+    const user = await User.findById(payload.userId);
+    if (!user) {
+      throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+    }
+    const car = await Car.findById(payload.carId);
+    if (!car) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Car not found!');
+    }
+    const result = await Review.create(payload);
 
-  //   const result = await Review.create(payload);
+    if (!result) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Failed to add car review!',
+      );
+    }
+    // console.log({ result });
 
-  //   if (!result) {
-  //     throw new AppError(
-  //       httpStatus.BAD_REQUEST,
-  //       'Failed to add Business review!',
-  //     );
-  //   }
-  //   // console.log({ result });
+    let { reviews, ratings } = car;
+    // console.log({ ratings });
+    // console.log({ reviewCount });
 
-  //   let { reviewCount, ratings } = business;
-  //   // console.log({ ratings });
-  //   // console.log({ reviewCount });
+    const newRating = (ratings * reviews + result.rating) / (reviews + 1);
+    // console.log({ newRating });
 
-  //   const newRating =
-  //     (ratings * reviewCount + result.rating) / (reviewCount + 1);
-  //   // console.log({ newRating });
+    const updatedCar = await Car.findByIdAndUpdate(
+      car._id,
+      {
+        reviews: reviews + 1,
+        ratings: newRating,
+      },
+      { new: true },
+    );
 
-  //   const updatedRegistration = await Business.findByIdAndUpdate(
-  //     business._id,
-  //     {
-  //       reviewCount: reviewCount + 1,
-  //       ratings: newRating,
-  //     },
-  //     { new: true },
-  //   );
+    if (!updatedCar) {
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to update car Ratings!',
+      );
+    }
 
-  //   if (!updatedRegistration) {
-  //     throw new AppError(
-  //       httpStatus.INTERNAL_SERVER_ERROR,
-  //       'Failed to update Business Ratings!',
-  //     );
-  //   }
+    return result;
+  } catch (error) {
+    console.error('Error creating review:', error);
 
-  //   return result;
-  // } catch (error) {
-  //   console.error('Error creating review:', error);
+    if (error instanceof AppError) {
+      throw error;
+    }
 
-  //   if (error instanceof AppError) {
-  //     throw error;
-  //   }
-
-  //   throw new AppError(
-  //     httpStatus.INTERNAL_SERVER_ERROR,
-  //     'An unexpected error occurred while creating the review.',
-  //   );
-  // }
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'An unexpected error occurred while creating the review.',
+    );
+  }
 };
+
+
 
 const getAllReviewByBusinessQuery = async (
   query: Record<string, unknown>,
-  businessId: string,
+  carId: string,
 ) => {
   const reviewQuery = new QueryBuilder(
-    Review.find({ businessId }).populate('businessId').populate('customerId'),
+    Review.find({ carId }).populate('userId'),
     query,
   )
     .search([''])
@@ -102,6 +102,8 @@ const getSingleReviewQuery = async (id: string) => {
 
   return result[0];
 };
+
+
 
 const updateReviewQuery = async (
   id: string,

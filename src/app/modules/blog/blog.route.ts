@@ -12,12 +12,16 @@ blogRouter
   .post(
     '/create-blog',
     //  auth(USER_ROLE.ADMIN),
+    // upload.fields([
+    //   { name: 'image', maxCount: 1 },
+    //   { name: 'image1', maxCount: 1 },
+    //   { name: 'image2', maxCount: 1 },
+    // ]),
     upload.fields([
-      { name: 'image', maxCount: 1 },
-      // { name: 'bodyImage', maxCount: 1 },
-      // { name: 'upload3Photos', maxCount: 3 },
-      // { name: 'ugcImage', maxCount: 1 },
+      { name: 'blogImage', maxCount: 1 },
+      { name: 'blogSectionImages' },
     ]),
+    // upload.any(),
     blogController.createBlog,
   )
   .get(
@@ -31,10 +35,8 @@ blogRouter
     //  auth(USER_ROLE.ADMIN),
 
     upload.fields([
-      { name: 'image', maxCount: 1 },
-      // { name: 'bodyImage', maxCount: 1 },
-      // { name: 'upload3Photos', maxCount: 3 },
-      // { name: 'ugcImage', maxCount: 1 },
+      { name: 'blogImage', maxCount: 1 },
+      { name: 'blogSectionImages' },
     ]),
     blogController.updateSingleBlog,
   )

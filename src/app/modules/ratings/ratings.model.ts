@@ -3,15 +3,15 @@ import { TReview } from './ratings.interface';
 
 const reviewSchema = new Schema<TReview>(
   {
-    customerId: {
+    carId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      ref: 'Car',
+    },
+    userId: {
       type: Schema.Types.ObjectId,
       required: true,
       ref: 'User',
-    },
-    businessId: {
-      type: Schema.Types.ObjectId,
-      required: true,
-      ref: 'Business',
     },
     rating: {
       type: Number,

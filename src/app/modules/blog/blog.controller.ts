@@ -9,9 +9,9 @@ const createBlog = catchAsync(async (req, res) => {
   const imageFiles = req.files as {
     [fieldname: string]: Express.Multer.File[];
   };
-  // if (imageFiles?.image && imageFiles?.image?.length > 0) {
-  //   payload.image = imageFiles.image[0].path.replace(/^public[\\/]/, '');
-  // }
+
+  console.log('payload', payload);
+  
 
   const result = await blogService.createBlog(imageFiles, payload);
 
@@ -49,6 +49,10 @@ const getSingleBlog = catchAsync(async (req, res) => {
 const updateSingleBlog = catchAsync(async (req, res) => {
   const { id } = req.params;
   const payload = req.body;
+  const subBlogId= req.params.subBlogId
+  if(subBlogId){
+    payload.subBlogId=subBlogId
+  }
 
   const imageFiles = req.files as {
     [fieldname: string]: Express.Multer.File[];

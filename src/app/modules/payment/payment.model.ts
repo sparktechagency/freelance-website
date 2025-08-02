@@ -29,22 +29,21 @@ const paymentSchema = new Schema<TPayment>(
       type: Date,
       default: Date.now,
     },
-    subscriptionId: {
+    bookingId: {
       type: Schema.Types.ObjectId,
-      ref: 'Subscription',
-      required: false,
+      ref: 'CarBooking',
+      required: true,
     },
-    type:{
-      type:String,
-      required:true,
-      enum: ['regular', 'renewal'],
-      default:"regular"
+    sessionId: {
+      type: String,
+      required: true,
     },
-    isRefund:{
-      type:Boolean,
-      required:true,
-      default:false
-    }
+
+    isRefund: {
+      type: Boolean,
+      required: true,
+      default: false,
+    },
   },
   { timestamps: true },
 );

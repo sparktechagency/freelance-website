@@ -1,81 +1,83 @@
 import AppError from '../../error/AppError';
 import httpStatus from 'http-status';
 import QueryBuilder from '../../builder/QueryBuilder';
-import { TPackage } from '../package/package.interface';
 import { access, unlink } from 'fs/promises';
-import Blog from './blog.model';
-import { deleteFromS3, deleteManyFromS3, uploadManyToS3, uploadToS3 } from '../../utils/s3';
+import { deleteFromS3,  uploadToS3 } from '../../utils/s3';
 import { TBlog } from './blog.interface';
+import { Blog, BlogSection } from './blog.model';
 
 const createBlog = async (files: any, payload: TBlog) => {
   try {
 
+    payload.subBlogSections = JSON.parse(payload.subBlogSections as any);
 
-    if (files.image && files.image.length > 0) {
-      const image: any = await uploadToS3({
-        file: files.image[0],
-        fileName: files.image[0].originalname,
-        folder: 'blogs/',
-      });
-      payload.image = image;
+    if(files.blogImage && files.blogImage.length > 0) {
+      payload.image = files.blogImage[0].path.replace(/^public[\\/]/, '');
     }
-    // if (files.bodyImage && files.bodyImage.length > 0) {
-    //   const image: any = await uploadToS3({
-    //     file: files.bodyImage[0],
-    //     fileName: files.bodyImage[0].originalname,
-    //     folder: 'blogs/',
-    //   });
-    //   payload.bodyImage = image;
-    // }
-    // if (files.upload3Photos && files.upload3Photos.length > 0) {
-    //   const upload3Photos = await uploadManyToS3(files.upload3Photos, 'blogs/');
-    //   payload.upload3Photos = upload3Photos;
-    // }
-    // if (files.ugcImage && files.ugcImage.length > 0) {
-    //   const image: any = await uploadToS3({
-    //     file: files.ugcImage[0],
-    //     fileName: files.ugcImage[0].originalname,
-    //     folder: 'blogs/',
-    //   });
-    //   payload.ugcImage = image;
-    // }
 
+   if (payload?.subBlogSections && payload?.subBlogSections.length > 0) {
+     payload?.subBlogSections?.map((section: any) => {
+      files?.blogSectionImages?.map((file: any) => {
+        console.log('file.originalname', file.originalname);
+        if (section.image1 && section.image1 === file.originalname) {
+          section.image1 = file.path.replace(/^public[\\/]/, '');
+        }
+        if (section.image2 && section.image2 === file.originalname) {
+          section.image2 = file.path.replace(/^public[\\/]/, '');
+        }
+      })
+       
+     });
+   }
+     
+   const blogData = {
+     image: payload.image,
+     title: payload.title,
+     details: payload.details
+   }
 
-    const result = await Blog.create(payload);
+   
+
+    const result = await Blog.create(blogData);
     if (result) {
-      const fileDeletePathimage = `${files.image[0].path}`;
+      const fileDeletePathimage = `${files.blogImage[0]?.path}`;
       await unlink(fileDeletePathimage);
-
-      // const fileDeletePathbodyImage = `${files.bodyImage[0].path}`;
-      // await unlink(fileDeletePathbodyImage);
-
-      // const fileDeletePathupload3Photos =files.upload3Photos.map((file: any) => `${file.path}`);
-      // for (const fileDeletePath of fileDeletePathupload3Photos) {
-      //   await unlink(fileDeletePath);
-      // }
-
-      // const fileDeletePathugcImage = `${files.ugcImage[0].path}`;
-      // await unlink(fileDeletePathugcImage);
-      
     }
+
+    console.log('payload.subBlogSections', payload.subBlogSections);
+
+    const updateBlogSectionData = payload.subBlogSections.map((section: any) => {
+      return {
+        blogId: result._id,
+        subTitle: section.title,
+        subDetails: section.details,
+        image1: section.image1,
+        image2: section.image2,
+      };
+    })
+
+    console.log('updateBlogSectionData', updateBlogSectionData);
+
+    const subResult = await BlogSection.insertMany(updateBlogSectionData);
+
+    if(subResult) {
+      files.blogSectionImages.map((file: any) => {
+        const fileDeletePath = `${file.path}`;
+        unlink(fileDeletePath);
+      })
+    }
+
+
     return result;
   } catch (error) {
     try {
-      const fileDeletePathimage = `${files.image[0].path}`;
+      const fileDeletePathimage = `${files.blogImage[0].path}`;
       await unlink(fileDeletePathimage);
 
-      // const fileDeletePathbodyImage = `${files.bodyImage[0].path}`;
-      // await unlink(fileDeletePathbodyImage);
-
-      // const fileDeletePathupload3Photos = files.upload3Photos.map(
-      //   (file: any) => `${file.path}`,
-      // );
-      // for (const fileDeletePath of fileDeletePathupload3Photos) {
-      //   await unlink(fileDeletePath);
-      // }
-
-      // const fileDeletePathugcImage = `${files.ugcImage[0].path}`;
-      // await unlink(fileDeletePathugcImage);
+      files.blogSectionImages.map((file: any) => {
+        const fileDeletePath = `${file.path}`;
+        unlink(fileDeletePath);
+      })
     } catch (fsError) {
       console.error('Error accessing or deleting the image file:', fsError);
     }
@@ -103,7 +105,11 @@ const getSingleBlogQuery = async (id: string) => {
   if (!blog) {
     throw new AppError(404, 'Blog Not Found!!');
   }
-  return blog;
+  const subBlogSections = await BlogSection.find({ blogId: id });
+  console.log('subBlogSections', subBlogSections);
+  blog.subBlogSections = subBlogSections;
+  const newResult = {...blog._doc, subBlogSections};
+  return newResult;
 };
 
 const updateSingleBlogQuery = async (id: string, files: any, payload: any) => {
@@ -111,52 +117,80 @@ const updateSingleBlogQuery = async (id: string, files: any, payload: any) => {
     console.log('id', id);
     console.log('updated payload', payload);
 
+    if(payload.subBlogSections && payload.subBlogSections.length > 0) {
+      payload.subBlogSections = JSON.parse(payload.subBlogSections as any);
+    }
+
     // Find existing package by ID
-    const existingPackage: any = await Blog.findById(id);
-    if (!existingPackage) {
-      throw new AppError(404, 'Package not found!');
+    const blog: any = await Blog.findById(id);
+    if (!blog) {
+      throw new AppError(404, 'blog not found!');
     }
 
-    if (files?.image && files?.image.length > 0) {
-      const image: any = await uploadToS3({
-        file: files.image[0],
-        fileName: files.image[0].originalname,
-        folder: 'blogs/',
-      });
-      payload.image = image;
+    const blogdata:any ={};
 
-      const result = await Blog.findByIdAndUpdate(id, payload, {
-        new: true,
-      });
-      if (result) {
-        const fileDeletePath = `${files.image[0].path}`;
-        await unlink(fileDeletePath);
-      }
+    if(files?.blogImage && files?.blogImage?.length > 0) {
+      blogdata.image = files.blogImage[0].path.replace(/^public[\\/]/, '');
+    }
 
-      const key = existingPackage.image.split('amazonaws.com/')[1];
-
-      const deleteImage: any = await deleteFromS3(key);
-      console.log('deleteImage', deleteImage);
-      if (!deleteImage) {
-        throw new AppError(404, 'Blog Image Deleted File !');
-      }
-
-      return result;
-
-
-    }else{
-
-      const result = await Blog.findByIdAndUpdate(id, payload, {
+    if(payload.title || payload.details){
+      blogdata.title = payload.title;
+      blogdata.details = payload.details;
+      const result = await Blog.findByIdAndUpdate(id, blogdata, {
         new: true,
       });
       return result;
+    }else if (payload.subBlogId) {
+      const subBlogsData:any = {};
 
+      console.log('files.files', files.blogSectionImages);
+      console.log('payload.subBlogSections', payload.subBlogSections);
+
+      if(files?.blogSectionImages && files?.blogSectionImages?.length > 0) {
+
+        if(payload?.subBlogSections?.image1) {
+          if(files?.blogSectionImages[0]?.originalname === payload.subBlogSections.image1) {
+            subBlogsData.image1 = files.blogSectionImages[0].path.replace(/^public[\\/]/, '');
+          }
+        }
+        
+        if(payload?.subBlogSections?.image2) {
+          if(files?.blogSectionImages[1]?.originalname === payload.subBlogSections.image2) {
+            subBlogsData.image2 = files.blogSectionImages[0].path.replace(/^public[\\/]/, '');
+          }
+        }
+        
+        
+      }
+     
+
+      if(payload.subBlogSections){
+        subBlogsData.subTitle = payload.subBlogSections.subTitle;
+        subBlogsData.subDetails = payload.subBlogSections.subDetails;
+      }
+      console.log('subBlogsData', subBlogsData);
+      const result = await BlogSection.findOneAndUpdate(
+        { _id: payload.subBlogId, blogId: blog._id },
+        subBlogsData,
+        {
+          new: true,
+        },
+      );
+      return result;
     }
+
+
+
 
   } catch (error) {
     try {
-      const fileDeletePath = `${files.image[0].path}`;
-      await unlink(fileDeletePath);
+      const fileDeletePathimage = `${files.blogImage[0].path}`;
+      await unlink(fileDeletePathimage);
+
+      files.blogSectionImages.map((file: any) => {
+        const fileDeletePath = `${file.path}`;
+        unlink(fileDeletePath);
+      });
     } catch (fsError) {
       console.error('Error accessing or deleting the image file:', fsError);
     }
@@ -175,28 +209,18 @@ const deletedBlogQuery = async (id: string) => {
 
   console.log('blogs', blog)
 
-  const key1 = blog.image.split('amazonaws.com/')[1];
-  const deleteImage1:any = await deleteFromS3(key1);
-
-  // const key2 = blog.bodyImage.split('amazonaws.com/')[1];
-  // const deleteImage2:any = await deleteFromS3(key2);
-
-  // const key3 = blog.ugcImage.split('amazonaws.com/')[1];
-  // const deleteImage3:any = await deleteFromS3(key3);
-
-
-  // const keys = blog?.upload3Photos?.map(
-  //   (key: any) => key.url.split('amazonaws.com/')[1],
-  // );
-  // const deleteImages: any = await deleteManyFromS3(keys);
-  // console.log('deleteImage', deleteImages);
-
-  if (deleteImage1 ) {
-    const result = await Blog.findByIdAndDelete(id);
-    return result;
-  } else {
-    throw new AppError(500, 'Failed to delete one or more images from S3');
+  const result = await Blog.findByIdAndDelete(id);
+  if (!result) {
+    throw new AppError(404, 'Blog Result Not Found !');
   }
+  
+
+  const subResult = await BlogSection.deleteMany({ blogId: id });
+  if (!subResult) {
+    throw new AppError(404, 'Blog Section Result Not Found !');
+  }
+
+ return result;
 
 
 };

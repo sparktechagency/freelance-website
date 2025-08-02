@@ -3,8 +3,24 @@ import fs from 'fs';
 import multer from 'multer';
 const fileUpload = (uploadDirectory: string) => {
   if (!fs.existsSync(uploadDirectory)) {
+    // console.log('uploadDirectory1', uploadDirectory);
     fs.mkdirSync(uploadDirectory, { recursive: true });
+
   }
+
+  // if (!fs.existsSync(uploadDirectory)) {
+  //   console.log('Directory does not exist. Creating:', uploadDirectory);
+  //   try {
+  //     fs.mkdirSync(uploadDirectory, { recursive: true });
+  //     console.log('Directory created:', uploadDirectory);
+  //   } catch (err) {
+  //     console.error('Error creating directory:', err);
+  //   }
+  // } else {
+  //   console.log('Directory already exists:', uploadDirectory);
+  // }
+
+
   const storage = multer.diskStorage({
     destination: function (req: Request, file, cb) {
       if (file.fieldname === 'profile') {

@@ -12,16 +12,14 @@ import chatRouter from '../modules/chat/chat.route';
 import messageRouter from '../modules/message/message.route';
 // import favoriteProductRoutes from '../modules/favorite/favorite.route';
 import faqRouter from '../modules/faq/faq.route';
-import reportRouter from '../modules/report/report.route';
-import creatorRouter from '../modules/creator/creator.route';
-import packageRouter from '../modules/package/package.route';
 import blogRouter from '../modules/blog/blog.route';
-import subcriptionRouter from '../modules/subscription/subscription.route';
-import hireCreatorRouter from '../modules/hireCreator/hireCreator.route';
-import purchestRouter from '../modules/purchestPackage/purchestPackage.route';
-import uploadVideoRouter from '../modules/uploadVideo/uploadVideo.route';
-import assignTaskCreatorRouter from '../modules/assignTaskCreator/assignTaskCreator.route';
 import contactUsRouter from '../modules/contactUs/contactUs.route';
+import propertyRouter from '../modules/properties/properties.route';
+import reservationsRouter from '../modules/reservations/reservations.route';
+import carRouter from '../modules/car/car.route';
+import reportRouter from '../modules/report/report.route';
+import carBookingRouter from '../modules/carBooking/carBooking.route';
+import facilityRouter from '../modules/facility/facility.route';
 
 const router = Router();
 
@@ -86,41 +84,35 @@ const moduleRoutes = [
     path: '/report',
     route: reportRouter,
   },
-  {
-    path: '/creator',
-    route: creatorRouter,
-  },
-  {
-    path: '/hire-creator',
-    route: hireCreatorRouter,
-  },
-  {
-    path: '/package',
-    route: packageRouter,
-  },
-  {
-    path: '/subscription',
-    route: subcriptionRouter,
-  },
+
   {
     path: '/blog',
     route: blogRouter,
   },
-  {
-    path: '/purchest',
-    route: purchestRouter,
-  },
-  {
-    path: '/upload-video',
-    route: uploadVideoRouter,
-  },
-  {
-    path: '/assign-task-creator',
-    route: assignTaskCreatorRouter,
-  },
+
   {
     path: '/contact-us',
     route: contactUsRouter,
+  },
+  {
+    path: '/properties',
+    route: propertyRouter,
+  },
+  {
+    path: '/reservations',
+    route: reservationsRouter,
+  },
+  {
+    path: '/car',
+    route: carRouter,
+  },
+  {
+    path: '/car-booking',
+    route: carBookingRouter,
+  },
+  {
+    path: '/facility',
+    route: facilityRouter,
   },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

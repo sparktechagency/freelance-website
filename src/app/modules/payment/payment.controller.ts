@@ -8,14 +8,11 @@ import config from '../../config';
 import paypalClient from '../../utils/paypal';
 // import { StripeAccount } from '../stripeAccount/stripeAccount.model';
 import paypal from '@paypal/checkout-server-sdk';
-import HireCreator from '../hireCreator/hireCreator.model';
 import { Payment } from './payment.model';
-import Subscription from '../subscription/subscription.model';
 import { Request, Response } from 'express';
 import { deleteFromS3 } from '../../utils/s3';
 import mongoose from 'mongoose';
 import { cancelTemplete, successTemplete } from '../../../templete/templete';
-import { calculateEndDate } from '../subscription/subcription.utils';
 import { notificationService } from '../notification/notification.service';
 
 
@@ -44,104 +41,29 @@ const addPayment = catchAsync(async (req, res, next) => {
 });
 
 
-const createPaypalPayment = catchAsync(async (req, res, next) => {
-  const { userId } = req.user;
-  const orderData = req.body;
-  orderData.userId = userId;
-  const result = await paymentService.createPaypalPaymentService(req.body);
-  if (result) {
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: 'Payment Successfull!!',
-      data: result,
-    });
-  } else {
-    sendResponse(res, {
-      statusCode: httpStatus.BAD_REQUEST,
-      success: true,
-      message: 'Data is not found',
-      data: {},
-    });
-  }
-});
-
-
-const reniewPaypalPayment = catchAsync(async (req, res, next) => {
-  const { userId } = req.user;
-  const {id} = req.params;
-  // const orderData = req.body;
-  // orderData.userId = userId;
-  const result = await paymentService.reniewPaypalPaymentService(id, userId);
-  if (result) {
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: 'Reniew Payment Successfull!!',
-      data: result,
-    });
-  } else {
-    sendResponse(res, {
-      statusCode: httpStatus.BAD_REQUEST,
-      success: true,
-      message: 'Data is not found',
-      data: {},
-    });
-  }
-});
-
-
-const refundPaypalPayment = catchAsync(async (req, res, next) => {
-  const captureId = req.body.captureId;
-  const amount = req.body.amount;
-  const result = await paymentService.refundPaypalPaymentService(
-    captureId,
-    amount,
-  );
-  if (result) {
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: 'Refund Payment Successfull!!',
-      data: result,
-    });
-  } else {
-    sendResponse(res, {
-      statusCode: httpStatus.BAD_REQUEST,
-      success: true,
-      message: 'Data is not found',
-      data: {},
-    });
-  }
-});
-
-const transferPaypalPayment = catchAsync(async (req, res, next) => {
-  const captureId = req.body.captureId;
-  const amount = req.body.amount;
-  const result = await paymentService.transferPaypalPaymentService(
-    captureId,
-    amount,
-  );
-  if (result) {
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: 'Transefer Payment Successfull!!',
-      data: result,
-    });
-  } else {
-    sendResponse(res, {
-      statusCode: httpStatus.BAD_REQUEST,
-      success: true,
-      message: 'Data is not found',
-      data: {},
-    });
-  }
-});
-
-
 const getAllPayment = catchAsync(async (req, res, next) => {
   const result = await paymentService.getAllPaymentService(req.query);
+  // // console.log('result',result)
+
+  if (result) {
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Payment are retrived Successfull!!',
+      data: result,
+    });
+  } else {
+    sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: true,
+      message: 'Data is not found',
+      data: {},
+    });
+  }
+});
+
+const getAllPaymentReveniew = catchAsync(async (req, res, next) => {
+  const result = await paymentService.getAllPaymentServiceReveniew(req.query);
   // // console.log('result',result)
 
   if (result) {
@@ -264,17 +186,7 @@ const overviewAll = catchAsync(async (req, res) => {
   });
 });
 
-const getBrandEngagement = catchAsync(async (req, res) => {
-  const { days }: any = req.query;
-  const result = await paymentService.getBrandEngagement(days);
 
-  sendResponse(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    data: result,
-    message: 'Brand Engagement successful!!',
-  });
-});
 
 const getAllSubscrptionUserRasioBydays = catchAsync(async (req, res) => {
   const { days }: any = req.query;
@@ -306,243 +218,13 @@ const getAllIncomeRasioBydays = catchAsync(async (req, res) => {
 //payment
 
 const successPage = async (req: Request, res: Response) => {
-  const { token }: any = req.query;
-  const { orderId }: any = req.query;
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-
-    const request = new paypal.orders.OrdersGetRequest(token);
-    const orderResponse = await paypalClient.execute(request);
-
-    if (orderResponse.result.status !== 'APPROVED') {
-      throw new Error('Payment not completed');
-    }
-
-    const captureRequest = new paypal.orders.OrdersCaptureRequest(token);
-    const captureResponse = await paypalClient.execute(captureRequest);
-    
-    console.log(
-      'transactionId',
-      captureResponse.result.purchase_units[0].payments.captures[0].id,
-    );
-
-    if (captureResponse.result.status !== 'COMPLETED') {
-      throw new Error('Payment capture failed');
-    }
-
-    const updateHireCreator: any = await HireCreator.findByIdAndUpdate(
-      orderId,
-      { status: 'pending', paymentStatus: 'paid' },
-      { new: true, session },
-    );
-
-    if (!updateHireCreator) {
-      throw new Error('HireCreator update failed!');
-    }
-
-  
-
-
-    const paymentData = {
-      userId: updateHireCreator.userId,
-      method: 'paypal',
-      amount: Number(
-        captureResponse.result.purchase_units[0].payments.captures[0].amount
-          .value,
-      ),
-      status: 'paid',
-      transactionId:captureResponse.result.purchase_units[0].payments.captures[0].id,
-      transactionDate: new Date(),
-      subscriptionId: updateHireCreator.subscriptionId,
-    };
-    console.log('payment data', paymentData);
-
-    const payment = await Payment.create([paymentData], { session });
-    console.log('payment', payment);
-    if (!payment) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Payment not created!');
-    }
-
-    const notificationData = {
-      role: 'admin',
-      message: `New Hire Creator created and payment is completed`,
-      type: 'success',
-    };
-
-    await notificationService.createNotification(notificationData, session);
-
-    await session.commitTransaction();
-    res.send(successTemplete);
-
-  } catch (error) {
-    await session.abortTransaction();
-    if (orderId) {
-      const updateHireCreator = await HireCreator.findById(orderId);
-
-      if (updateHireCreator) {
-        await HireCreator.findByIdAndDelete(orderId, { session });
-        await Subscription.findOneAndDelete(
-          {
-            userId: updateHireCreator.userId,
-            _id: updateHireCreator.subscriptionId,
-          },
-          { session },
-        );
-
-        const key =
-          updateHireCreator.contentInfo.ugcPhoto.split('amazonaws.com/')[1];
-
-        const deleteImage: any = await deleteFromS3(key);
-        console.log('deleteImage', deleteImage);
-        if (!deleteImage) {
-          throw new AppError(404, 'Do not Image Deleted!');
-        }
-      }
-    }
-
-    res.status(500).send('An error occurred while processing the payment.');
-  }finally{
-    session.endSession();
-  }
+  res.send(successTemplete);
 };
 
 const cancelPaymentPage = async (req: Request, res: Response) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-  try {
-    const { orderId }: any = req.query;
-    console.log('orderId', orderId);
-
-    if (!orderId) {
-      throw new Error('Order ID is required.');
-    }
-
-    const updateHireCreator: any =
-      await HireCreator.findById(orderId).session(session);
-
-    if (!updateHireCreator) {
-      throw new Error('Order not found.');
-    }
-
-    const deleteSubscription = await Subscription.findOneAndDelete({
-      userId: updateHireCreator.userId,
-      _id: updateHireCreator.subscriptionId,
-    }).session(session);
-
-    if (!deleteSubscription) {
-      console.log('No subscription found for the given orderId.');
-    }
-
-    const deleteHireCreator =
-      await HireCreator.findByIdAndDelete(orderId).session(session);
-
-    if (!deleteHireCreator) {
-      console.log('No HireCreator found to delete for the given orderId.');
-    }
-
-    const key =
-      updateHireCreator.contentInfo.ugcPhoto.split('amazonaws.com/')[1];
-
-    const deleteImage: any = await deleteFromS3(key);
-    console.log('deleteImage', deleteImage);
-    if (!deleteImage) {
-      throw new AppError(404, 'Do not Image Deleted!');
-    }
-    await session.commitTransaction();
-    res.send(cancelTemplete);
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    console.error('Error during cancellation:', error);
-
-    res
-      .status(500)
-      .send('An error occurred while processing the cancellation.');
-  }
-};
-
-
-// reniew
-const reniewSuccessPage = async (req: Request, res: Response) => {
-  const { token }: any = req.query;
-  const { subscriptionId }: any = req.query;
-
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const request = new paypal.orders.OrdersGetRequest(token);
-    const orderResponse = await paypalClient.execute(request);
-
-    if (orderResponse.result.status !== 'APPROVED') {
-      throw new Error('Payment not completed');
-    }
-
-    const captureRequest = new paypal.orders.OrdersCaptureRequest(token);
-    const captureResponse = await paypalClient.execute(captureRequest);
-
-    if (captureResponse.result.status !== 'COMPLETED') {
-      throw new Error('Payment capture failed');
-    }
-
-    const isExistSubscription = await Subscription.findById(subscriptionId);
-
-    if (!isExistSubscription) {
-      throw new AppError(404, 'Subscription is not found!!');
-    }
-
-     const days = isExistSubscription.type === 'monthly' ? 30 : 365;
-          const generateEndDate = calculateEndDate(new Date(), days);
-
-    const updateSubscription: any = await Subscription.findByIdAndUpdate(
-      subscriptionId,
-      { endDate: generateEndDate },
-      { new: true, session },
-    );
-
-    if (!updateSubscription) {
-      throw new Error('Subscription update failed!');
-    }
-
-    const paymentData = {
-      userId: isExistSubscription.userId,
-      method: 'paypal',
-      amount: Number(
-        captureResponse.result.purchase_units[0].payments.captures[0].amount
-          .value,
-      ),
-      status: 'paid',
-      transactionId:
-        captureResponse.result.purchase_units[0].payments.captures[0].id,
-      transactionDate: new Date(),
-      subscriptionId: isExistSubscription._id,
-      type: 'reniew',
-    };
-    console.log('payment data', paymentData);
-    
-
-    const payment = await Payment.create([paymentData], { session });
-    console.log('payment', payment);
-    if (payment.length === 0) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Payment not created!');
-    }
-    await session.commitTransaction();
-    res.send(successTemplete);
-  } catch (error) {
-    await session.abortTransaction();
-    res.status(500).send('Something is wrong!!');
-  } finally {
-    session.endSession();
-  }
-};
-
-
-const reniewCancelPaymentPage = async (req: Request, res: Response) => {
   res.send(cancelTemplete);
 };
+
 
 
 // const successPageAccount = catchAsync(async (req, res) => {
@@ -731,25 +413,19 @@ const getAllEarningRasio = catchAsync(async (req, res) => {
 
 export const paymentController = {
   addPayment,
-  createPaypalPayment,
-  reniewPaypalPayment,
-  refundPaypalPayment,
-  transferPaypalPayment,
   getAllPayment,
+  getAllPaymentReveniew,
   getSinglePayment,
   deleteSinglePayment,
   getAllPaymentByCustormer,
   getAllIncomeRasio,
   overviewAll,
-  getBrandEngagement,
   getAllIncomeRasioBydays,
   getAllSubscrptionUserRasioBydays,
   createCheckout,
   conformWebhook,
   successPage,
   cancelPaymentPage,
-  reniewSuccessPage,
-  reniewCancelPaymentPage,
   getAllEarningRasio,
   //   successPageAccount,
   //   paymentRefund,

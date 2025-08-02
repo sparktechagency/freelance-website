@@ -7,7 +7,7 @@ const createReview = catchAsync(async (req, res) => {
   const reviewData = req.body;
   const { userId } = req.user;
   // console.log({ userId });
-  reviewData.customerId = userId;
+  reviewData.userId = userId;
 
   const result = await reviewService.createReviewService(reviewData);
 
