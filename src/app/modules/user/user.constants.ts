@@ -3,7 +3,7 @@ export const USER_ROLE = {
   SUB_ADMIN: 'sub_admin',
   ADMIN: 'admin',
   USER: 'user',
-  CREATOR: 'creator',
+  DOCTOR: 'doctor',
 } as const;
 
 export const gender = ['Male', 'Female', 'Others'] as const;

@@ -33,7 +33,7 @@ const createUserToken = async (payload: TUserCreate) => {
   const { role, email, fullName, password, } = payload;
 
   // user role check
-  if (!(role === USER_ROLE.USER )) {
+  if (!(role === USER_ROLE.USER  || role === USER_ROLE.DOCTOR)) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
   }
 
@@ -126,9 +126,13 @@ console.log('token', token)
 
   if (!decodeData) {
     throw new AppError(httpStatus.BAD_REQUEST, 'You are not authorised');
+
   }
 
   const { password, email, fullName, role, profile, ...rest } = decodeData;
+  if (!(role === USER_ROLE.USER || role === USER_ROLE.DOCTOR)) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
+  }
 
   const isOtpMatch = await otpServices.otpMatch(email, otp);
 
@@ -142,9 +146,7 @@ console.log('token', token)
     });
   });
 
-  if (!(role === USER_ROLE.USER  || role === USER_ROLE.CREATOR)) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
-  }
+  
 
  
 
@@ -200,7 +202,7 @@ const creatorUserService = async (
 
 const { role, email, fullName, password, ...rest } = payload;
 
-  if (!(payload.role === USER_ROLE.CREATOR)) {
+  if (!(payload.role === USER_ROLE.DOCTOR)) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
   }
 

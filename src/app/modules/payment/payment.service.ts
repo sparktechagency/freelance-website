@@ -17,7 +17,6 @@ import axios from 'axios';
 import paypalClient from '../../utils/paypal';
 import paypal from '@paypal/checkout-server-sdk';
 import * as paypalPayouts from '@paypal/payouts-sdk';
-import CarBooking from '../carBooking/carBooking.model';
 
 
 type SessionData = Stripe.Checkout.Session;
@@ -610,161 +609,161 @@ const createCheckout = async (userId: any, payload: any) => {
 
 const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
 
-  try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        console.log(
-          'hit hise webhook controller servie checkout.session.completed',
-        );
-        const sessionData = event.data.object as Stripe.Checkout.Session;
-        const {
-          id: sessionId,
-          payment_intent: paymentIntentId,
-          metadata,
-        }: SessionData = sessionData;
-        const bookingId = metadata?.bookingId as string;
-        const userId = metadata?.userId as string;
+  // try {
+  //   switch (event.type) {
+  //     case 'checkout.session.completed': {
+  //       console.log(
+  //         'hit hise webhook controller servie checkout.session.completed',
+  //       );
+  //       const sessionData = event.data.object as Stripe.Checkout.Session;
+  //       const {
+  //         id: sessionId,
+  //         payment_intent: paymentIntentId,
+  //         metadata,
+  //       }: SessionData = sessionData;
+  //       const bookingId = metadata?.bookingId as string;
+  //       const userId = metadata?.userId as string;
 
-        if (!paymentIntentId) {
-          throw new AppError(
-            httpStatus.BAD_REQUEST,
-            'Payment Intent ID not found in session',
-          );
-        }
+  //       if (!paymentIntentId) {
+  //         throw new AppError(
+  //           httpStatus.BAD_REQUEST,
+  //           'Payment Intent ID not found in session',
+  //         );
+  //       }
 
-        const paymentIntent = await stripe.paymentIntents.retrieve(
-          paymentIntentId as string,
-        );
+  //       const paymentIntent = await stripe.paymentIntents.retrieve(
+  //         paymentIntentId as string,
+  //       );
 
-        if (!paymentIntent || paymentIntent.amount_received === 0) {
-          throw new AppError(httpStatus.BAD_REQUEST, 'Payment Not Successful');
-        }
-
-       
-        const carBooking = await CarBooking.findByIdAndUpdate(
-          bookingId,
-          { paymentStatus: 'paid', status: 'confirmed' },
-          { new: true },
-        );
-
-        if (!carBooking) {
-          throw new AppError(httpStatus.BAD_REQUEST, 'Car Booking not found');
-        }
+  //       if (!paymentIntent || paymentIntent.amount_received === 0) {
+  //         throw new AppError(httpStatus.BAD_REQUEST, 'Payment Not Successful');
+  //       }
 
        
+  //       const carBooking = await CarBooking.findByIdAndUpdate(
+  //         bookingId,
+  //         { paymentStatus: 'paid', status: 'confirmed' },
+  //         { new: true },
+  //       );
 
-        console.log('===carBooking', carBooking);
+  //       if (!carBooking) {
+  //         throw new AppError(httpStatus.BAD_REQUEST, 'Car Booking not found');
+  //       }
 
-        const paymentData: any = {
-          userId: userId,
-          amount: carBooking?.totalAmount,
-          method: 'stripe',
-          transactionId: paymentIntentId,
-          bookingId: carBooking?._id,
-          status: 'paid',
-          sessionId: sessionId,
-          transactionDate: carBooking?.bookingDate,
-        };
+       
 
-        const payment = await Payment.create(paymentData);
-        console.log('===payment', payment);
+  //       console.log('===carBooking', carBooking);
 
-        if (!payment) {
-          throw new AppError(
-            httpStatus.BAD_REQUEST,
-            'Payment record creation failed',
-          );
-        }
-        const user = await User.findById(userId);
-        if (!user) {
-          throw new AppError(httpStatus.BAD_REQUEST, 'User not found');
-        }
+  //       const paymentData: any = {
+  //         userId: userId,
+  //         amount: carBooking?.totalAmount,
+  //         method: 'stripe',
+  //         transactionId: paymentIntentId,
+  //         bookingId: carBooking?._id,
+  //         status: 'paid',
+  //         sessionId: sessionId,
+  //         transactionDate: carBooking?.bookingDate,
+  //       };
 
-        const notificationData = {
-          userId: userId,
-          message: 'Booking create successfull!!',
-          type: 'success',
-        };
+  //       const payment = await Payment.create(paymentData);
+  //       console.log('===payment', payment);
 
-        const notificationData1 = {
-          role: 'admin',
-          message: 'New Booking create successfull!!',
-          type: 'success',
-        };
+  //       if (!payment) {
+  //         throw new AppError(
+  //           httpStatus.BAD_REQUEST,
+  //           'Payment record creation failed',
+  //         );
+  //       }
+  //       const user = await User.findById(userId);
+  //       if (!user) {
+  //         throw new AppError(httpStatus.BAD_REQUEST, 'User not found');
+  //       }
 
-        const [notification, notification1] = await Promise.all([
-          notificationService.createNotification(notificationData),
-          notificationService.createNotification(notificationData1),
-        ]);
+  //       const notificationData = {
+  //         userId: userId,
+  //         message: 'Booking create successfull!!',
+  //         type: 'success',
+  //       };
 
-        if (!notification || !notification1) {
-          throw new AppError(404, 'Notification create faild!!');
-        }
+  //       const notificationData1 = {
+  //         role: 'admin',
+  //         message: 'New Booking create successfull!!',
+  //         type: 'success',
+  //       };
 
-        const deletedServiceBookings = await CarBooking.deleteMany(
-          {
-            userId,
-            status: 'pending',
-          }
-        );
-        console.log('deletedServiceBookings', deletedServiceBookings);
+  //       const [notification, notification1] = await Promise.all([
+  //         notificationService.createNotification(notificationData),
+  //         notificationService.createNotification(notificationData1),
+  //       ]);
+
+  //       if (!notification || !notification1) {
+  //         throw new AppError(404, 'Notification create faild!!');
+  //       }
+
+  //       const deletedServiceBookings = await CarBooking.deleteMany(
+  //         {
+  //           userId,
+  //           status: 'pending',
+  //         }
+  //       );
+  //       console.log('deletedServiceBookings', deletedServiceBookings);
 
         
 
-        console.log('Payment completed successfully:', {
-          sessionId,
-          paymentIntentId,
-        });
+  //       console.log('Payment completed successfully:', {
+  //         sessionId,
+  //         paymentIntentId,
+  //       });
 
-        break;
-      }
+  //       break;
+  //     }
 
-      case 'checkout.session.async_payment_failed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const clientSecret = session.client_secret;
-        const sessionData = event.data.object as Stripe.Checkout.Session;
-        const {
-          id: sessionId,
-          payment_intent: paymentIntentId,
-          metadata,
-        }: SessionData = sessionData;
-        const bookingId = metadata?.bookingId as string;
-        const userId = metadata?.userId as string;
+  //     case 'checkout.session.async_payment_failed': {
+  //       const session = event.data.object as Stripe.Checkout.Session;
+  //       const clientSecret = session.client_secret;
+  //       const sessionData = event.data.object as Stripe.Checkout.Session;
+  //       const {
+  //         id: sessionId,
+  //         payment_intent: paymentIntentId,
+  //         metadata,
+  //       }: SessionData = sessionData;
+  //       const bookingId = metadata?.bookingId as string;
+  //       const userId = metadata?.userId as string;
 
-        if (!clientSecret) {
-          console.warn('Client Secret not found in session.');
-          throw new AppError(httpStatus.BAD_REQUEST, 'Client Secret not found');
-        }
+  //       if (!clientSecret) {
+  //         console.warn('Client Secret not found in session.');
+  //         throw new AppError(httpStatus.BAD_REQUEST, 'Client Secret not found');
+  //       }
 
-        const deletedServiceBookings = await CarBooking.deleteMany({
-          userId,
-          status: 'pending',
-        });
+  //       const deletedServiceBookings = await CarBooking.deleteMany({
+  //         userId,
+  //         status: 'pending',
+  //       });
 
-        // const payment = await Payment.findOne({ session_id: sessionId });
+  //       // const payment = await Payment.findOne({ session_id: sessionId });
 
-        // if (payment) {
-        //   payment.status = 'Failed';
-        //   await payment.save();
-        //   // console.log('Payment marked as failed:', { clientSecret });
-        // } else {
-        //   console.warn(
-        //     'No Payment record found for Client Secret:',
-        //     clientSecret,
-        //   );
-        // }
+  //       // if (payment) {
+  //       //   payment.status = 'Failed';
+  //       //   await payment.save();
+  //       //   // console.log('Payment marked as failed:', { clientSecret });
+  //       // } else {
+  //       //   console.warn(
+  //       //     'No Payment record found for Client Secret:',
+  //       //     clientSecret,
+  //       //   );
+  //       // }
 
-        break;
-      }
+  //       break;
+  //     }
 
-      default:
-        // // console.log(`Unhandled event type: ${event.type}`);
-        // res.status(400).send();
-        return;
-    }
-  } catch (err) {
-    console.error('Error processing webhook event:', err);
-  }
+  //     default:
+  //       // // console.log(`Unhandled event type: ${event.type}`);
+  //       // res.status(400).send();
+  //       return;
+  //   }
+  // } catch (err) {
+  //   console.error('Error processing webhook event:', err);
+  // }
 };
 
 // const paymentRefundService = async (
