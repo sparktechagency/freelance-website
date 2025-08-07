@@ -16,6 +16,7 @@ import contactUsRouter from '../modules/contactUs/contactUs.route';
 import reportRouter from '../modules/report/report.route';
 import doctorAvailableRouter from '../modules/doctorAvailable/doctorAvailable.route';
 import doctorBookingRouter from '../modules/doctorBooking/doctorBooking.route';
+import commentsRouter from '../modules/comments/comments.route';
 
 const router = Router();
 
@@ -92,6 +93,10 @@ const moduleRoutes = [
   {
     path: '/doctor-booking',
     route: doctorBookingRouter,
+  },
+  {
+    path: '/comments',
+    route: commentsRouter,
   },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
