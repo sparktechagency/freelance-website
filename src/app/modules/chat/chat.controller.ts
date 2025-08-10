@@ -65,6 +65,38 @@ const createChat = catchAsync(async (req, res) => {
   });
 });
 
+
+const addParticipant = catchAsync(async (req, res) => {
+  const {chatId, participantId}:any = req.query;
+ 
+
+  const addParticipantdata = {
+    chatId,
+    participantId
+  }
+
+  const chat = await chatService.addParticipant(addParticipantdata);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Add Participant successfully!!',
+    data: chat,
+  });
+});
+
+
+const pinUnpinChat = catchAsync(async (req, res) => {
+  const { chatId }: any = req.params;
+
+  const chat = await chatService.pinUnpinChat(chatId);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Successfully working!!',
+    data: chat,
+  });
+});
+
 const getMyChatList = catchAsync(async (req, res) => {
   const query = req.query;
   const userId = req.user.userId;
@@ -98,7 +130,8 @@ const updateChat = catchAsync(async (req, res) => {
 });
 
 const deleteChat = catchAsync(async (req, res) => {
-  const result = await chatService.deleteChatList(req.params.id);
+  const { userId } = req.user;
+  const result = await chatService.deleteChatList(req.params.id, userId);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -110,6 +143,8 @@ const deleteChat = catchAsync(async (req, res) => {
 export const chatController = {
   // getAllChats,
   createChat,
+  addParticipant,
+  pinUnpinChat,
   getMyChatList,
   getChatById,
   updateChat,

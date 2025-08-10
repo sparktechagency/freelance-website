@@ -202,12 +202,12 @@ const createChat = async (payload: IChat) => {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Invalid user');
   }
 
+
   const alreadyExists = await Chat.findOne({
     participants: { $all: payload.participants },
   }).populate(['participants']);
 
   if (alreadyExists) {
-    // return alreadyExists;
     throw new AppError(httpStatus.BAD_REQUEST, 'Chat already exists');
   }
 
@@ -218,19 +218,71 @@ const createChat = async (payload: IChat) => {
   return result;
 };
 
+
+const addParticipant = async (payload: {
+  chatId: string;
+  participantId: string;
+}) => {
+  console.log('add participant payload', payload);
+  const chat = await Chat.findById(payload?.chatId);
+
+  if (!chat) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Chat not found!!');
+  }
+
+  const participant = await User.findById(payload?.participantId);
+
+  if (!participant) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'participant not found!!');
+  }
+
+
+  const participantId = new mongoose.Types.ObjectId(payload?.participantId); 
+  
+
+  const alreadyExists = await Chat.findOne({
+    _id: chat._id,
+    participants: { $all: participantId },
+  });
+  console.log(' alreadyExists', alreadyExists);
+
+  if(alreadyExists){
+    return alreadyExists;
+  }else{
+
+  chat.participants.push(participantId);
+  await chat.save();
+
+  return chat;
+  }
+
+};
+
+
+const pinUnpinChat = async (
+  chatId: string
+) => {
+  console.log('add participant payload', chatId);
+  const chat = await Chat.findById(chatId);
+
+  if (!chat) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Chat not found!!');
+  }
+
+  chat.isPinned = !chat.isPinned;
+  await chat.save();
+
+  return chat;
+  
+};
+
+
 // Get my chat list
 const getMyChatList = async (
   userId: string,
   query?: Record<string, unknown>,
 ) => {
   console.log('*****', userId);
-  // const chats = await Chat.find({
-  //   participants: { $all: userId },
-  // }).populate({
-  //   path: 'participants',
-  //   select: 'fullName email image role _id phone',
-  //   match: { _id: { $ne: userId } },
-  // });
 
   let chats;
   if (query && query.search && query.search !== '') {
@@ -244,6 +296,7 @@ const getMyChatList = async (
       $and: [
         { participants: { $all: [userId] } },
         { participants: { $in: matchingUserIds } },
+        { deletedByUsers: { $ne: userId } },
       ],
     }).populate({
       path: 'participants',
@@ -253,6 +306,7 @@ const getMyChatList = async (
   } else {
     chats = await Chat.find({
       participants: { $all: userId },
+      deletedByUsers: { $ne: userId },
     }).populate({
       path: 'participants',
       select: 'fullName email image role _id phone',
@@ -294,8 +348,11 @@ const getMyChatList = async (
       sender: '',
       receiver: '',
       chatId: '',
+      replyTo: null,
       createdAt: null,
       updatedAt: null,
+      isPinned: false,
+      reactionUsers: [],
       __v: '',
     };
 
@@ -312,7 +369,15 @@ const getMyChatList = async (
   });
   console.log('data.length', data.length);
 
-  return data.length ? data : chats;
+  console.log('data', data);
+
+  // Separate pinned and unpinned
+  const pinned = data.filter((item) => item.chat.isPinned === true);
+  const unpinned = data.filter((item) => !item.chat.isPinned);
+  const newResult = { pinned, unpinned };
+
+  // return data.length ? data: chats;
+  return newResult;
 };
 
 // Get chat by ID
@@ -339,18 +404,30 @@ const updateChatList = async (id: string, payload: Partial<IChat>) => {
 
 
 
-const deleteChatList = async (id: string) => {
-  // await deleteFromS3(`images/messages/${id}`);
-  const result = await Chat.findByIdAndDelete(id);
-  if (!result) {
+const deleteChatList = async (id: string, userId: string) => {
+  const chat = await Chat.findById(id);
+  if (!chat) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Chat not found');
   }
-  return result;
+  await Chat.findByIdAndUpdate(
+    id,
+    { $addToSet: { deletedByUsers: userId } }, 
+    { new: true },
+  );
+
+ await Message.updateMany(
+   { chatId: id },
+   { $addToSet: { deletedByUsers: userId } },
+ );
+  
+
+  return chat;
 };
 
-// Export all functions as part of chatService object (Optional)
 export const chatService = {
   createChat,
+  addParticipant,
+  pinUnpinChat,
   getChatById,
   // getChatByParticipants,
   // getChatDetailsByParticipantId,

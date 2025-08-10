@@ -11,7 +11,7 @@ const createCommentOrReply = async (payload: {
   replyId?: string;
   userId: string;
   doctorId: string;
-  message: string;
+  message: string;  
   isReply?: boolean;
   isReplyToReply?: boolean;
 }) => {
@@ -164,6 +164,44 @@ const handleLikeForComments = async (payload: {
   return updatedComment;
 };
 
+// const getAllCommentByDoctorQuery = async (id: string) => {
+//   let comments = await Comments.find({ doctorId: id })
+//     .populate({ path: 'doctorId', select: 'fullName profile' })
+//     .populate({ path: 'userId', select: 'fullName profile' });
+
+//   // Apply deep population for each top-level comment
+//   comments = await Promise.all(
+//     comments.map((comment) => deepPopulateReplies(comment, 5)), // 5 = max depth
+//   );
+
+//   if (!comments.length) {
+//     throw new AppError(403, 'No comments found for this doctor!');
+//   }
+
+//   return comments;
+// };
+
+// const deepPopulateReplies = async (doc, depth = 5) => {
+//   if (depth <= 0 || !doc) return doc;
+
+//   // Populate the first level of replies
+//   doc = await Comments.populate(doc, [
+//     { path: 'userId', select: 'fullName profile' },
+//     { path: 'commentsReply', select: 'message userId likes commentsReply' },
+//   ]);
+
+//   // Recursively populate each reply
+//   if (doc.commentsReply && doc.commentsReply.length > 0) {
+//     doc.commentsReply = await Promise.all(
+//       doc.commentsReply.map((reply) => deepPopulateReplies(reply, depth - 1)),
+//     );
+//   }
+
+//   return doc;
+// };
+
+
+
 
 const getAllCommentByDoctorQuery = async (id:string) => {
 
@@ -210,16 +248,15 @@ const getAllCommentByDoctorQuery = async (id:string) => {
   console.log('result', result);
 
 
-  console.log('result', result);
   if (!result || result.length === 0) {
     throw new AppError(403, 'No comments found for this doctor!');
   }
 
-
-
   return result;
   
 };
+ 
+
 
 const getSingleCommentQuery = async (id: string) => {
   const comment: any = await Comments.findById(id);

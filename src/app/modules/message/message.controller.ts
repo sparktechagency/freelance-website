@@ -54,10 +54,42 @@ const createMessages = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: 'Message sent successfully',
+    message: 'Message sent successfully!!',
     data: result,
   });
 });
+
+
+const pinUnpinMessage = catchAsync(async (req, res) => {
+  console.log('hit hoise');
+
+  const messageId = req.params.messageId;
+  const result = await messageService.pinUnpinMessage(messageId);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Successfully working!',
+    data: result,
+  });
+});
+
+
+const messageReaction = catchAsync(async (req, res) => {
+  console.log('hit hoise');
+
+  const messageId = req.params.messageId;
+  const userId = req.user.userId;
+  const reactionType = req.query.reactionType as string;
+  const result = await messageService.messageReaction(messageId, userId, reactionType);
+  sendResponse(res, {
+    statusCode: 200,
+    success: true,
+    message: 'Successfully working!',
+    data: result,
+  });
+});
+
+  
 
 // Get all messages
 const getAllMessages = catchAsync(async (req, res) => {
@@ -71,9 +103,15 @@ const getAllMessages = catchAsync(async (req, res) => {
   });
 });
 
-// Get messages by chat ID
+
+// Get messages by chat ID 
 const getMessagesByChatId = catchAsync(async (req, res) => {
-  const result = await messageService.getMessagesByChatId( req.query, req.params.chatId);
+  const { userId } = req.user;
+  const result = await messageService.getMessagesByChatId(
+    req.query,
+    req.params.chatId,
+    userId,
+  );
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -92,6 +130,7 @@ const getMessagesById = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
 
 // Update message
 const updateMessages = catchAsync(async (req, res) => {
@@ -160,7 +199,8 @@ const seenMessage = catchAsync(async (req, res) => {
 });
 // Delete message
 const deleteMessages = catchAsync(async (req, res) => {
-  const result = await messageService.deleteMessages(req.params.id);
+  const {userId} = req.user;
+  const result = await messageService.deleteMessages(req.params.id, userId);
   sendResponse(res, {
     statusCode: 200,
     success: true,
@@ -176,6 +216,8 @@ export const messageController = {
   updateMessages,
   deleteMessages,
   createMessages,
+  pinUnpinMessage,
+  messageReaction,
   seenMessage,
   getAllMessages,
 };

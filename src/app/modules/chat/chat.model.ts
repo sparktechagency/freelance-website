@@ -16,6 +16,17 @@ const chatSchema = new Schema<IChat>(
       enum: ['accepted', 'blocked'],
       default: 'accepted',
     },
+    isPinned: {
+      type: Boolean,
+      default: false,
+    },
+    deletedByUsers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false,
+      },
+    ],
   },
   {
     timestamps: true,

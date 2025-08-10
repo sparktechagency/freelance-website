@@ -14,21 +14,37 @@ messageRouter.get('/', messageController.getAllMessages);
 
 messageRouter.post(
   '/send-messages',
-  auth(USER_ROLE.ADMIN, USER_ROLE.CREATOR),
+  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
   upload.fields([{ name: 'image', maxCount: 5 }]),
   messageController.createMessages,
+);
+messageRouter.post(
+  '/send-messages',
+  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
+  upload.fields([{ name: 'image', maxCount: 5 }]),
+  messageController.createMessages,
+);
+messageRouter.post(
+  '/pin-unpin-message/:messageId',
+  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
+  messageController.pinUnpinMessage,
+);
+messageRouter.post(
+  '/message-reaction/:messageId',
+  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
+  messageController.messageReaction,
 );
 
 messageRouter.patch(
   '/seen/:chatId',
-  auth(USER_ROLE.ADMIN, USER_ROLE.CREATOR),
+  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
 
   messageController.seenMessage,
 );
 
 messageRouter.patch(
   '/update/:id',
-  auth(USER_ROLE.ADMIN, USER_ROLE.CREATOR),
+  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
   //   upload.single('image'),
   upload.fields([{ name: 'image', maxCount: 5 }]),
   //   parseData(),
@@ -43,19 +59,19 @@ messageRouter.get(
 
 messageRouter.delete(
   '/:id',
-  auth(USER_ROLE.ADMIN, USER_ROLE.CREATOR),
+  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
   messageController.deleteMessages,
 );
 
 messageRouter.get(
   '/:id',
-  auth(USER_ROLE.ADMIN, USER_ROLE.CREATOR),
+  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
   messageController.getMessagesById,
 );
 
 messageRouter.get(
   '/',
-  auth(USER_ROLE.ADMIN, USER_ROLE.CREATOR),
+  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
   messageController.getAllMessages,
 );
 

@@ -4,6 +4,7 @@ export const USER_ROLE = {
   ADMIN: 'admin',
   USER: 'user',
   DOCTOR: 'doctor',
+  ASSISTANT: 'assistant',
 } as const;
 
 export const gender = ['Male', 'Female', 'Others'] as const;

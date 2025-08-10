@@ -114,69 +114,88 @@ const createMessages = async (payload: IMessages) => {
   if (!sender) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Sender is not found!!');
   }
-  const chat = await Chat.findById(payload.chatId);
-  if (!chat) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Chat is not found!!');
-  }
 
-  console.log('chat part', chat);
+  let chat;
 
-  const receiver = chat.participants.find(
-    (id) => id.toString() !== sender._id.toString(),
-  );
+  if (payload.chatId && !payload.replyTo) {
+    console.log('payload.chatId', payload.chatId);
+    chat = await Chat.findById(payload.chatId).select('participants');
+    if (!chat) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Chat not found!');
+    }
+    // Derive receiver if not given
+    if (!payload.receiver) {
+      const receiver = chat.participants.find(
+        (id) => id.toString() !== payload.sender.toString(),
+      );
+      if (!receiver) {
+        throw new AppError(httpStatus.BAD_REQUEST, 'Receiver not found!');
+      }
+    }
+  } else if (payload.chatId && payload.replyTo) {
+    console.log('payload.chatId', payload.chatId);
+    chat = await Chat.findById(payload.chatId).select('participants');
+    if (!chat) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Chat not found!');
+    }
+    const replyMessage = await Message.findById(payload.replyTo);
+    if (!replyMessage) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Reply message not found!');
+    }
 
+    // Derive receiver if not given
+    if (!payload.receiver) {
+      const receiver = chat.participants.find(
+        (id) => id.toString() !== payload.sender.toString(),
+      );
+      if (!receiver) {
+        throw new AppError(httpStatus.BAD_REQUEST, 'Receiver not found!');
+      }
+    }
 
-  console.log('receiver==', receiver);
+    payload.replyTo = replyMessage._id;
+  } else if (payload.receiver && !payload.chatId && !payload.replyTo) {
+    console.log('payload.receiver', payload.receiver);
+    const receiver = await User.findById(payload.receiver);
+    if (!receiver) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Receiver is not found!!');
+    }
+    if (payload.sender.toString() === payload.receiver.toString()) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Sender and Receiver cannot be the same.',
+      );
+    }
 
-  if (!receiver) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Recever is not found!!');
-  }
+    chat = await Chat.create({
+      participants: [payload.sender, payload.receiver],
+    });
 
-  payload.receiver = receiver;
-
-  console.log('payload last part', payload);
-
-  if (sender._id.toString() === receiver._id.toString()) {
+    payload.chatId = chat._id;
+  } else {
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      'Sender and Receiver cannot be the same person. Please change.',
+      'Either chatId or receiver must be provided.',
     );
   }
 
-  const alreadyExists = await Chat.findOne({
-    participants: { $all: [payload.sender, payload.receiver] },
-  }).populate(['participants']);
-
-  if (!alreadyExists) {
-    const chatList = await Chat.create({
-      participants: [payload.sender, payload.receiver],
-    });
-    // console.log(' exist nah');
-    //@ts-ignore
-    payload.chatId = chatList?._id;
-  } else {
-    // console.log('already exist');
-    //@ts-ignore
-    payload.chatId = alreadyExists?._id;
-  }
-
-
-
-  const result = await (await Message.create(payload)).populate([
+  const result = await (
+    await Message.create(payload)
+  ).populate([
     {
       path: 'sender',
       select: 'name email image role _id phone',
     },
     {
-      path: 'receiver',
-      select: 'name email image role _id phone',
+      path: 'replyTo',
+      select: 'image sender',
+      populate: { path: 'sender', select: 'name email image role _id phone' },
     },
   ]);
   // console.log('result', result);
 
-
   if (!result) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Message creation failed');
+    throw new AppError(httpStatus.BAD_REQUEST, 'Message creation failed!!');
   }
 
   if (io) {
@@ -186,26 +205,95 @@ const createMessages = async (payload: IMessages) => {
 
     io.emit(senderMessage, result);
 
-    const chatListSender = await chatService.getMyChatList(
-      result?.sender._id.toString(),
-    );
-    const chatListReceiver = await chatService.getMyChatList(
-      result?.receiver._id.toString(),
-    );
+     const receivers = chat.participants.filter(
+       (id) => id.toString() !== payload.sender.toString(),
+     );
 
-    console.log('ChatListSender', chatListSender);
-    console.log('ChatListReceiver', chatListReceiver);
+     for (const userId of receivers) {
+       const chatList = await chatService.getMyChatList(userId.toString());
+       io.emit(`chat-list::${userId.toString()}`, chatList);
+     }
 
-    const senderChat = 'chat-list::' + result.sender._id.toString();
-    const receiverChat = 'chat-list::' + result.receiver._id.toString();
-    console.log('senderChat', senderChat);
-    console.log('receiverChat', receiverChat);
-    io.emit(receiverChat, chatListReceiver);
-    io.emit(senderChat, chatListSender);
+     const senderChatList = await chatService.getMyChatList(
+       payload.sender.toString(),
+     );
+     io.emit(`chat-list::${payload.sender.toString()}`, senderChatList);
+
   }
 
   return result;
 };
+
+
+const pinUnpinMessage = async (messageId: string) => {
+  console.log('payload khela hobe', messageId);
+
+  const message = await Message.findById(messageId);
+  // console.log('sender==', sender);
+
+  if (!message) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Message is not found!!');
+  }
+
+  message.isPinned = !message.isPinned;
+  const result = await message.save();
+
+
+  return result;
+};
+
+
+const messageReaction = async (
+  messageId: string,
+  userId: string,
+  reactionType: string,
+) => {
+  console.log('payload khela hobe', messageId);
+
+  const message = await Message.findById(messageId);
+  if (!message) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Message is not found!!');
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'User is not found!!');
+  }
+
+  const existingReaction = message.reactionUsers.find(
+    (r: any) => r.userId.toString() === userId,
+  );
+
+  let updatedMessage;
+
+  if (existingReaction) {
+    if (existingReaction.reactionType === reactionType) {
+      // Same reaction → remove it
+      updatedMessage = await Message.findByIdAndUpdate(
+        messageId,
+        { $pull: { reactionUsers: { userId } } },
+        { new: true },
+      );
+    } else {
+      // Different reaction → update it
+      updatedMessage = await Message.findOneAndUpdate(
+        { _id: messageId, 'reactionUsers.userId': userId },
+        { $set: { 'reactionUsers.$.reactionType': reactionType } },
+        { new: true },
+      );
+    }
+  } else {
+    // No reaction → add new one
+    updatedMessage = await Message.findByIdAndUpdate(
+      messageId,
+      { $push: { reactionUsers: { userId, reactionType } } },
+      { new: true },
+    );
+  }
+
+  return updatedMessage;
+};
+
 
 // Get all messages
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -219,15 +307,20 @@ const getAllMessages = async (query: Record<string, any>) => {
     throw new AppError(httpStatus.BAD_REQUEST, 'Chat is not found!!');
   }
 
-  const MessageModel = new QueryBuilder(
+  const messageModel = new QueryBuilder(
     Message.find().populate([
       {
         path: 'sender',
         select: 'name email image role _id phone ',
       },
+      // {
+      //   path: 'receiver',
+      //   select: 'name email image role _id phone ',
+      // },
       {
-        path: 'receiver',
-        select: 'name email image role _id phone ',
+        path: 'replyTo',
+        select: 'image sender',
+        populate: { path: 'sender', select: 'name email image role _id phone' },
       },
     ]),
     query,
@@ -242,8 +335,8 @@ const getAllMessages = async (query: Record<string, any>) => {
   // const getAllMessages = 'all-message::' + chat._id.toString();
   // io.emit(getAllMessages, message);
 
-  const data = await MessageModel.modelQuery;
-  const meta = await MessageModel.countTotal();
+  const data = await messageModel.modelQuery;
+  const meta = await messageModel.countTotal();
   return {
     meta,
     data,
@@ -269,13 +362,19 @@ const updateMessages = async (id: string, payload: Partial<IMessages>) => {
 const getMessagesByChatId = async (
   query: Record<string, unknown>,
   chatId: string,
+  userId: string,
 ) => {
   query.sort = '-createdAt';
   const TaskPostQuery = new QueryBuilder(
-    Message.find({ chatId: chatId }).populate({
-      path: 'sender',
-      select: 'fullName image role',
-    }),
+    Message.find({ chatId: chatId, deletedByUsers: { $ne: userId } })
+      .populate({
+        path: 'sender',
+        select: 'fullName profile role',
+      })
+      .populate({
+        path: 'replyTo',
+        select: 'message',
+      }),
     query,
   )
     .search([''])
@@ -284,10 +383,22 @@ const getMessagesByChatId = async (
     .paginate()
     .fields();
 
-  const result = await TaskPostQuery.modelQuery;
+  const resultAll = await TaskPostQuery.modelQuery;
+  console.log('resultAll', resultAll);
+
+  const pinned = resultAll.filter((item) => item.isPinned === true);
+  const result = resultAll.filter((item) => !item.isPinned);
+
+  const newResult = {
+    pinned: pinned,
+    result: result,
+  };
+
   const meta = await TaskPostQuery.countTotal();
-  return { meta, result};
+  return { meta, newResult };
 };
+
+
 
 // Get message by ID
 const getMessagesById = async (id: string) => {
@@ -296,10 +407,15 @@ const getMessagesById = async (id: string) => {
       path: 'sender',
       select: 'name email image role _id phoneNumber ',
     },
+    // {
+    //   path: 'receiver',
+    //   select: 'name email image role _id phoneNumber ',
+    // },
     {
-      path: 'receiver',
-      select: 'name email image role _id phoneNumber ',
-    },
+      path: 'replyTo',
+      select: 'image sender',
+      populate: { path: 'sender', select: 'name email image role _id phoneNumber' },
+    }
   ]);
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Oops! Message not found');
@@ -307,27 +423,24 @@ const getMessagesById = async (id: string) => {
   return result;
 };
 
-const deleteMessages = async (id: string) => {
-  const message = await Message.findById(id);
-  if (!message) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Oops! Message not found');
-  }
-  // if (message?.imageUrl) {
-  //   await deleteFromS3(
-  //     `images/messages/${message?.chat.toString()}/${message?.id}`,
-  //   );
-  // }
+const deleteMessages = async (id: string, userId: string) => {
+  const updatedMessage = await Message.findByIdAndUpdate(
+    id,
+    { $addToSet: { deletedByUsers: userId } },
+    { new: true },
+  );
 
-  const result = await Message.findByIdAndDelete(id);
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Oops! Message not found');
+  if (!updatedMessage) {
+    throw new Error('Message not found');
   }
-  return result;
+
+  return updatedMessage;
 };
 
+
 const seenMessage = async (userId: string, chatId: string) => {
-  console.log('userId', userId);
-  console.log('chatId', chatId);
+  // console.log('userId', userId);
+  // console.log('chatId', chatId);
   const chatIdObj = new mongoose.Types.ObjectId(chatId);
   const userIdObj = new mongoose.Types.ObjectId(userId);
   const messageIdList = await Message.aggregate([
@@ -361,6 +474,8 @@ export const messageService = {
   // deleteMessage,
   // deleteMessagesByChatId,
   createMessages,
+  pinUnpinMessage,
+  messageReaction,
   getAllMessages,
   getMessagesByChatId,
   getMessagesById,
