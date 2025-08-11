@@ -10,7 +10,6 @@ const socketIO = (io: Server) => {
     return userSocketMap[receiverId];
   };
 
-  // On new socket connection
   io.on('connection', (socket: Socket) => {
     try {
 
