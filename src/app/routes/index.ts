@@ -27,6 +27,7 @@ import articleRouter from '../modules/article/article.route';
 import favoriteRoutes from '../modules/favorite/favorite.route';
 import postRouter from '../modules/post/post.route';
 import subcriptionRouter from '../modules/subscription/subscription.route';
+import reportcommentsRouter from '../modules/reportComments/reportComments.route';
 
 const router = Router();
 
@@ -143,6 +144,10 @@ const moduleRoutes = [
   {
     path: '/post',
     route: postRouter,
+  },
+  {
+    path: '/report-comments',
+    route: reportcommentsRouter,
   },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
