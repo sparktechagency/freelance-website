@@ -48,6 +48,16 @@ const userSchema = new Schema<TUser>(
       required: false,
       default: '',
     },
+    assistantId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Assistant',
+      default: null,
+    },
+    doctorId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Doctor',
+      default: null,
+    },
   },
   {
     timestamps: true,

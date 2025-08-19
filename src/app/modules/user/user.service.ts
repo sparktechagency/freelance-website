@@ -16,6 +16,8 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import Otp from '../otp/otp.model';
 import { imageUrlGenarate } from '../../utils/imageUrl';
+import { sendEmail } from '../../utils/mailSender';
+import Doctor from '../doctor/doctor.model';
 
 export type IFilter = {
   searchTerm?: string;
@@ -194,6 +196,95 @@ console.log('token', token)
   // });
 
   return user;
+};
+
+
+const createDoctorAssistant = async (payload: any) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    if (!payload.email || !payload.password || !payload.fullName) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Email, Password and Name fields are required',
+      );
+    }
+
+    if (payload.role !== 'doctor' && payload.role !== 'assistant') {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Role must be either doctor or assistant',
+      );
+    }
+
+    const existingUser = await User.findOne({ email: payload.email }).session(
+      session,
+    );
+    if (existingUser) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'User already exist!');
+    }
+
+    const result = await User.create([payload], { session });
+    const user = result[0]; 
+
+    if (!user) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'User creation failed');
+    }
+
+    if (user.role === 'doctor') {
+      const doctor = await Doctor.create([{ userId: user._id }], { session });
+      await User.findByIdAndUpdate(
+        user._id,
+        { doctorId: doctor[0]._id },
+        { session },
+      );
+    } else if (user.role === 'assistant') {
+      // const assistant = await Assistant.create([{ user: user._id }], {
+      //   session,
+      // });
+      // await User.findByIdAndUpdate(
+      //   user._id,
+      //   { assistantId: assistant[0]._id },
+      //   { session },
+      // );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const dashboardLink = 'https://dashboard.betterhabitsforlife.com';
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.5;">
+        <h2 style="color: #4CAF50;">🎉 Congratulations ${payload.fullName}!</h2>
+        <p>Welcome to <strong>Better Habits for Life</strong>!</p>
+        <p>Your account has been successfully created as a <strong>${payload.role}</strong>.</p>
+        <h3>Here are your login details:</h3>
+        <ul>
+          <li><strong>Email:</strong> ${payload.email}</li>
+          <li><strong>Password:</strong> ${payload.password}</li>
+        </ul>
+        <p>You can log in to your dashboard here:</p>
+        <p><a href="${dashboardLink}" style="color: #fff; background: #4CAF50; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Go to Dashboard</a></p>
+        <p>We’re excited to have you onboard. Let’s build better habits together!</p>
+        <br>
+        <p>Best Regards,</p>
+        <p><strong>The Better Habits for Life Team</strong></p>
+      </div>
+    `;
+
+    await sendEmail(
+      user.email,
+      `Welcome to Better Habits for Life!`,
+      emailHtml,
+    );
+
+    return user;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
 };
 
 const creatorUserService = async (
@@ -518,6 +609,7 @@ const blockedUser = async (id: string, userId: string) => {
 export const userService = {
   createUserToken,
   otpVerifyAndCreateUser,
+  createDoctorAssistant,
   creatorUserService,
   // userSwichRoleService,
   getUserById,

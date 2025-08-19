@@ -23,7 +23,9 @@ userRoutes
     validateRequest(resentOtpValidations.verifyOtpZodSchema),
     userController.userCreateVarification,
   )
-  .post('/create-creator', userController.creatorUser)
+  .post('/create-doctor-assistant', 
+    // auth(USER_ROLE.SUPER_ADMIN, USER_ROLE.ADMIN), 
+    userController.createDoctorAssistant)
   // .post(
   //   '/swich-role',
   //   auth(USER_ROLE.CUSTOMER, USER_ROLE.BUSINESS),

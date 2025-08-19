@@ -24,6 +24,8 @@ export interface TUser extends TUserCreate {
   profile: string;
   isActive: boolean;
   isDeleted: boolean;
+  doctorId: Types.ObjectId;
+  assistantId: Types.ObjectId;
 }
 
 export interface DeleteAccountPayload {
