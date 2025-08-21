@@ -585,7 +585,7 @@ const createCheckout = async (userId: any, payload: any) => {
     line_items: lineItems,
     metadata: {
       userId: String(userId),
-      bookingId: String(payload.subcriptionId),
+      subcriptionId: String(payload.subscriptionId),
     },
   };
 
@@ -609,6 +609,8 @@ const createCheckout = async (userId: any, payload: any) => {
 };
 
 const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
     switch (event.type) {
@@ -622,6 +624,7 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
           payment_intent: paymentIntentId,
           metadata,
         }: SessionData = sessionData;
+        console.log('metadata==', metadata);
         const subcriptionId = metadata?.subcriptionId as string;
         const userId = metadata?.userId as string;
 
@@ -640,18 +643,19 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
           throw new AppError(httpStatus.BAD_REQUEST, 'Payment Not Successful');
         }
 
-       
+        console.log('===subcriptionId', subcriptionId);
+
         const subscription = await Subscription.findByIdAndUpdate(
           subcriptionId,
           { status: 'running' },
-          { new: true },
+          { new: true, session },
         );
+
+        console.log('===subscription', subscription);
 
         if (!subscription) {
           throw new AppError(httpStatus.BAD_REQUEST, 'subscription not found');
         }
-
-       
 
         console.log('===subscription', subscription);
 
@@ -666,15 +670,15 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
           transactionDate: subscription?.createdAt,
         };
 
-        const payment = await Payment.create(paymentData);
+        const payment = await Payment.create([paymentData], { session });
         console.log('===payment', payment);
-
-        if (!payment) {
+        if (payment.length === 0) {
           throw new AppError(
             httpStatus.BAD_REQUEST,
             'Payment record creation failed',
           );
         }
+
         const user = await User.findById(userId);
         if (!user) {
           throw new AppError(httpStatus.BAD_REQUEST, 'User not found');
@@ -701,16 +705,12 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
           throw new AppError(404, 'Notification create faild!!');
         }
 
-        const deletedServiceBookings = await Subscription.deleteMany(
-          {
-            userId,
-            status: 'pending',
-          }
+        await Subscription.deleteMany(
+          { userId, status: 'pending' },
+          { session },
         );
-        console.log('deletedServiceBookings', deletedServiceBookings);
 
-        
-
+        await session.commitTransaction();
         console.log('Payment completed successfully:', {
           sessionId,
           paymentIntentId,
@@ -720,40 +720,22 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
       }
 
       case 'checkout.session.async_payment_failed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const clientSecret = session.client_secret;
         const sessionData = event.data.object as Stripe.Checkout.Session;
         const {
           id: sessionId,
           payment_intent: paymentIntentId,
           metadata,
         }: SessionData = sessionData;
-        const bookingId = metadata?.bookingId as string;
+        const subcriptionId = metadata?.subcriptionId as string;
         const userId = metadata?.userId as string;
 
-        if (!clientSecret) {
-          console.warn('Client Secret not found in session.');
-          throw new AppError(httpStatus.BAD_REQUEST, 'Client Secret not found');
-        }
 
-        const deletedServiceBookings = await Subscription.deleteMany({
-          userId,
-          status: 'pending',
-        });
+       await Subscription.deleteMany(
+         { userId, status: 'pending' },
+         { session },
+       );
 
-        // const payment = await Payment.findOne({ session_id: sessionId });
-
-        // if (payment) {
-        //   payment.status = 'Failed';
-        //   await payment.save();
-        //   // console.log('Payment marked as failed:', { clientSecret });
-        // } else {
-        //   console.warn(
-        //     'No Payment record found for Client Secret:',
-        //     clientSecret,
-        //   );
-        // }
-
+       await session.commitTransaction();
         break;
       }
 
@@ -763,7 +745,10 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
         return;
     }
   } catch (err) {
+    await session.abortTransaction();
     console.error('Error processing webhook event:', err);
+  } finally {
+    session.endSession();
   }
 };
 

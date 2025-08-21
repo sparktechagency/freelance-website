@@ -18,7 +18,7 @@ const app: Application = express();
 // app.set('view engine', 'ejs');
 
 app.post(
-  '/api/v1/port-payment-webhook',
+  '/api/v1/better-habits-payment-webhook',
   express.raw({ type: 'application/json' }),
   paymentController.conformWebhook,
 );

@@ -7,7 +7,7 @@ export type TPayment = {
   status: string;
   transactionId: string;
   transactionDate: Date;
-  bookingId?: Types.ObjectId;
+  subcriptionId?: Types.ObjectId;
   sessionId?: string;
   isRefund: boolean;
 };
