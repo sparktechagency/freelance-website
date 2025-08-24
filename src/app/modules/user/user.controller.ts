@@ -37,14 +37,14 @@ const userCreateVarification = catchAsync(async (req, res) => {
     data: newUser,
   });
 });
-const creatorUser = catchAsync(async (req, res) => {
+const createDoctorAssistant = catchAsync(async (req, res) => {
   const bodyData = req.body;
-  const newUser = await userService.creatorUserService(bodyData);
+  const newUser = await userService.createDoctorAssistant(bodyData);
 
   return sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Creator user create successfully',
+    message: `Create successfully!!`,
     data: newUser,
   });
 });
@@ -169,7 +169,7 @@ const deleteMyAccount = catchAsync(async (req: Request, res: Response) => {
 export const userController = {
   createUser,
   userCreateVarification,
-  creatorUser,
+  createDoctorAssistant,
   // userSwichRole,
   getUserById,
   getMyProfile,

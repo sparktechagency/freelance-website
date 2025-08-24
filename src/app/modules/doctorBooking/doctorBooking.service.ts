@@ -4,7 +4,7 @@ import QueryBuilder from '../../builder/QueryBuilder';
 import { TDoctorBooking } from './doctorBooking.interface';
 import DoctorBooking from './doctorBooking.model';
 import moment from 'moment';
-import DoctorAvailability from '../doctorAvailable/doctorAvailable.model';
+import DoctorAvailability from '../doctor/doctor.model';
 import { User } from '../user/user.models';
 import { getAvailableTimeSlots } from './doctorBooking.utils';
 
@@ -191,7 +191,10 @@ const getSingleDoctorAvailableQuery = async (id: string) => {
   }
   return DoctorAvailable;
 };
-const getSingleDoctorAvailableSlotsQuery = async (doctorId: string, date: string) => {
+const getSingleDoctorAvailableSlotsQuery = async (
+  doctorId: string,
+  date: string,
+) => {
   const doctor = await User.findById(doctorId);
   if (!doctor) {
     throw new AppError(404, 'Doctor Not Found!!');
@@ -231,13 +234,13 @@ const getSingleDoctorAvailableSlotsQuery = async (doctorId: string, date: string
 
   console.log('isDayAvailable', isDayAvailable);
 
-  const doctorAvailability:any ={
+  const doctorAvailability: any = {
     startTime: isDayAvailable[0].startTime,
     endTime: isDayAvailable[0].endTime,
     timeDuration: 30,
     lanchStartTime: isDayAvailable[0].lanchStartTime,
-    lanchEndTime: isDayAvailable[0].lanchEndTime
-  }
+    lanchEndTime: isDayAvailable[0].lanchEndTime,
+  };
   console.log('doctorAvailability111', doctorAvailability);
 
   const availableTimeSlots = await getAvailableTimeSlots(

@@ -29,8 +29,8 @@ pids/
 *.pid.lock
  
 # dotenv environment variables
-# .env
-# .env.*
+.env
+.env.*
  
 # But keep .env.sample
 !.env.sample

@@ -29,9 +29,9 @@ const paymentSchema = new Schema<TPayment>(
       type: Date,
       default: Date.now,
     },
-    bookingId: {
+    subcriptionId: {
       type: Schema.Types.ObjectId,
-      ref: 'CarBooking',
+      ref: 'Subcription',
       required: true,
     },
     sessionId: {

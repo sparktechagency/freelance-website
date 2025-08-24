@@ -10,7 +10,7 @@ import { Types } from "mongoose";
 
 
 export type TComments = {
-  doctorId: Types.ObjectId;
+  postId: Types.ObjectId;
   userId: Types.ObjectId;
   message: string;
   likes: [Types.ObjectId];

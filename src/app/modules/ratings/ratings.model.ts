@@ -3,10 +3,10 @@ import { TReview } from './ratings.interface';
 
 const reviewSchema = new Schema<TReview>(
   {
-    carId: {
+    courseId: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: 'Car',
+      ref: 'Course',
     },
     userId: {
       type: Schema.Types.ObjectId,

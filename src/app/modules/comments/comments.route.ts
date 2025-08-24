@@ -18,7 +18,7 @@ commentsRouter
     commentController.handleLikeForComments,
   )
   .get(
-    '/doctor/:id',
+    '/post/:id',
     //  auth(USER_ROLE.ADMIN),
     commentController.getAllCommentByDoctor,
   )

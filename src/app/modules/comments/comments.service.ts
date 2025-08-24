@@ -5,29 +5,28 @@ import { TComments } from './comments.interface';
 import Comments from './comments.model';
 import { User } from '../user/user.models';
 import mongoose, { Types } from 'mongoose';
+import Post from '../post/post.model';
 
 const createCommentOrReply = async (payload: {
   commentId?: string;
   replyId?: string;
   userId: string;
-  doctorId: string;
-  message: string;  
+  postId: string;
+  message: string;
   isReply?: boolean;
   isReplyToReply?: boolean;
 }) => {
   console.log('Payload received: ', payload);
 
-  const doctorExist = await User.findById(payload.doctorId);
-  if (!doctorExist) {
+  const postExist = await Post.findById(payload.postId);
+  if (!postExist) {
     throw new AppError(404, 'Doctor not found!');
   }
-  if (doctorExist.role !== 'doctor') {
-    throw new AppError(404, 'The specified user is not a doctor!');
-  }
+  
 
   if (!payload.isReply && !payload.isReplyToReply) {
     const newComment = new Comments({
-      doctorId: payload.doctorId,
+      postId: payload.postId,
       userId: payload.userId,
       message: payload.message,
       likes: [],
@@ -39,6 +38,11 @@ const createCommentOrReply = async (payload: {
     if (!savedComment) {
       throw new AppError(500, 'Failed to create comment');
     }
+    await Post.findByIdAndUpdate(
+      payload.postId,
+      { $inc: { commentsCount: 1 } },
+      { new: true },
+    );
     return savedComment;
   }
 
@@ -52,7 +56,7 @@ const createCommentOrReply = async (payload: {
 
     const replyComment = new Comments({
       userId: userObjectId,
-      doctorId: existingComment.doctorId,
+      postId: existingComment.postId,
       message: payload.message,
       likes: [],
       commentsReply: [],
@@ -68,6 +72,12 @@ const createCommentOrReply = async (payload: {
     await Comments.findByIdAndUpdate(payload.commentId, {
       $set: { commentsReply: existingComment.commentsReply },
     });
+
+    await Post.findByIdAndUpdate(
+      payload.postId,
+      { $inc: { commentsCount: 1 } },
+      { new: true },
+    );
 
     return savedReplyComment;
   }
@@ -87,7 +97,7 @@ const createCommentOrReply = async (payload: {
 
     const replyToReply = new Comments({
       userId: userObjectId,
-      doctorId: parentComment.doctorId,
+      postId: parentComment.postId,
       message: payload.message,
       likes: [],
       commentsReply: [],
@@ -104,6 +114,11 @@ const createCommentOrReply = async (payload: {
       $set: { commentsReply: parentReply.commentsReply },
     });
 
+    await Post.findByIdAndUpdate(
+      payload.postId,
+      { $inc: { commentsCount: 1 } },
+      { new: true },
+    );
     return savedReplyToReply;
   }
 };
@@ -169,38 +184,19 @@ const handleLikeForComments = async (payload: {
 //     .populate({ path: 'doctorId', select: 'fullName profile' })
 //     .populate({ path: 'userId', select: 'fullName profile' });
 
-//   // Apply deep population for each top-level comment
-//   comments = await Promise.all(
-//     comments.map((comment) => deepPopulateReplies(comment, 5)), // 5 = max depth
-//   );
+  // // Apply deep population for each top-level comment
+  // comments = await Promise.all(
+  //   comments.map((comment) => deepPopulateReplies(comment, 5)), // 5 = max depth
+  // );
 
-//   if (!comments.length) {
-//     throw new AppError(403, 'No comments found for this doctor!');
-//   }
+  // if (!comments.length) {
+  //   throw new AppError(403, 'No comments found for this doctor!');
+  // }
 
 //   return comments;
 // };
 
-// const deepPopulateReplies = async (doc, depth = 5) => {
-//   if (depth <= 0 || !doc) return doc;
-
-//   // Populate the first level of replies
-//   doc = await Comments.populate(doc, [
-//     { path: 'userId', select: 'fullName profile' },
-//     { path: 'commentsReply', select: 'message userId likes commentsReply' },
-//   ]);
-
-//   // Recursively populate each reply
-//   if (doc.commentsReply && doc.commentsReply.length > 0) {
-//     doc.commentsReply = await Promise.all(
-//       doc.commentsReply.map((reply) => deepPopulateReplies(reply, depth - 1)),
-//     );
-//   }
-
-//   return doc;
-// };
-
-const deepPopulateReplies = async (doc: any, depth = 5) => {
+const deepPopulateReplies = async (doc:any, depth = 5) => {
   if (depth <= 0 || !doc) return doc;
 
   // Populate the first level of replies
@@ -212,14 +208,17 @@ const deepPopulateReplies = async (doc: any, depth = 5) => {
   // Recursively populate each reply
   if (doc.commentsReply && doc.commentsReply.length > 0) {
     doc.commentsReply = await Promise.all(
-      doc.commentsReply.map((reply: any) => deepPopulateReplies(reply, depth)),
+      doc.commentsReply.map((reply:any) => deepPopulateReplies(reply, depth)),
     );
   }
 
   return doc;
 };
 
-const getAllCommentByDoctorQuery = async (id: string) => {
+
+
+const getAllCommentByDoctorQuery = async (id:string) => {
+
   let result = await Comments.find({ postId: id })
     .populate({
       path: 'postId',
@@ -278,60 +277,6 @@ const getAllCommentByDoctorQuery = async (id: string) => {
   return result;
 };
 
-
-// const getAllCommentByDoctorQuery = async (id:string) => {
-
-//   const result = await Comments.find({ doctorId: id })
-//     .populate({
-//       path: 'doctorId',
-//       select: 'fullName profile', 
-//     })
-//     .populate({
-//       path: 'userId',
-//       select: 'fullName profile', 
-//     })
-//     .populate({
-//       path: 'commentsReply', 
-//       select: 'message userId likes commentsReply',
-//       populate: [
-//         {
-//           path: 'userId', 
-//           select: 'fullName profile',
-//         },
-//         {
-//           path: 'commentsReply', 
-//           select: 'message userId likes commentsReply',
-//           populate: [
-//             {
-//               path: 'userId', 
-//               select: 'fullName profile',
-//             },
-//             {
-//               path: 'commentsReply', 
-//               select: 'message userId',
-//               populate: [
-//                 {
-//                   path: 'userId', 
-//                   select: 'fullName profile',
-//                 },
-//               ],
-//             },
-//           ],
-//         },
-//       ],
-//     });
-
-//   console.log('result', result);
-
-
-//   if (!result || result.length === 0) {
-//     throw new AppError(403, 'No comments found for this doctor!');
-//   }
-
-//   return result;
-  
-// };
- 
 
 
 const getSingleCommentQuery = async (id: string) => {

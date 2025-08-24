@@ -1,6 +1,8 @@
-// import { Types } from 'mongoose';
+import { Types } from 'mongoose';
 
-// export type TfavoriteProduct = {
-//   userId: Types.ObjectId;
-//   productId: Types.ObjectId;
-// };
+export type TfavoriteProduct = {
+  type: 'course' | 'article';
+  userId: Types.ObjectId;
+  courseId: Types.ObjectId;
+  articleId: Types.ObjectId;
+};

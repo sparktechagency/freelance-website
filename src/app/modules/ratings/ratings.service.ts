@@ -5,65 +5,67 @@ import QueryBuilder from '../../builder/QueryBuilder';
 import { User } from '../user/user.models';
 import { TReview } from './ratings.interface';
 import { Review } from './ratings.model';
+import Course from '../course/course.model';
 // import Business from '../business/business.model';
 
 const createReviewService = async (payload: TReview) => {
-  // try {
-  //   // console.log('Payload:', payload);
-  //   const user = await User.findById(payload.userId);
-  //   if (!user) {
-  //     throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
-  //   }
-  //   const car = await Car.findById(payload.carId);
-  //   if (!car) {
-  //     throw new AppError(httpStatus.NOT_FOUND, 'Car not found!');
-  //   }
-  //   const result = await Review.create(payload);
+  try {
+    // console.log('Payload:', payload);
+    const user = await User.findById(payload.userId);
+    if (!user) {
+      throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+    }
+    const course = await Course.findById(payload.courseId);
+    if (!course) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Course not found!');
+    }
+    const result = await Review.create(payload);
 
-  //   if (!result) {
-  //     throw new AppError(
-  //       httpStatus.BAD_REQUEST,
-  //       'Failed to add car review!',
-  //     );
-  //   }
-  //   // console.log({ result });
+    if (!result) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Failed to add car review!',
+      );
+    }
+    // console.log({ result });
 
-  //   let { reviews, ratings } = car;
-  //   // console.log({ ratings });
-  //   // console.log({ reviewCount });
+    let { reviews, ratings } = course;
+    reviews = reviews || 1;
+    // console.log({ ratings });
+    // console.log({ reviewCount });
 
-  //   const newRating = (ratings * reviews + result.rating) / (reviews + 1);
-  //   // console.log({ newRating });
+    const newRating = (ratings * reviews + result.rating) / (reviews + 1);
+    // console.log({ newRating });
 
-  //   const updatedCar = await Car.findByIdAndUpdate(
-  //     car._id,
-  //     {
-  //       reviews: reviews + 1,
-  //       ratings: newRating,
-  //     },
-  //     { new: true },
-  //   );
+    const updatedCar = await Course.findByIdAndUpdate(
+      course._id,
+      {
+        reviews: reviews   + 1,
+        ratings: newRating,
+      },
+      { new: true },
+    );
 
-  //   if (!updatedCar) {
-  //     throw new AppError(
-  //       httpStatus.INTERNAL_SERVER_ERROR,
-  //       'Failed to update car Ratings!',
-  //     );
-  //   }
+    if (!updatedCar) {
+      throw new AppError(
+        httpStatus.INTERNAL_SERVER_ERROR,
+        'Failed to update car Ratings!',
+      );
+    }
 
-  //   return result;
-  // } catch (error) {
-  //   console.error('Error creating review:', error);
+    return result;
+  } catch (error) {
+    console.error('Error creating review:', error);
 
-  //   if (error instanceof AppError) {
-  //     throw error;
-  //   }
+    if (error instanceof AppError) {
+      throw error;
+    }
 
-  //   throw new AppError(
-  //     httpStatus.INTERNAL_SERVER_ERROR,
-  //     'An unexpected error occurred while creating the review.',
-  //   );
-  // }
+    throw new AppError(
+      httpStatus.INTERNAL_SERVER_ERROR,
+      'An unexpected error occurred while creating the review.',
+    );
+  }
 };
 
 
