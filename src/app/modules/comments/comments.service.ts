@@ -200,61 +200,137 @@ const handleLikeForComments = async (payload: {
 //   return doc;
 // };
 
+const deepPopulateReplies = async (doc: any, depth = 5) => {
+  if (depth <= 0 || !doc) return doc;
 
+  // Populate the first level of replies
+  doc = await Comments.populate(doc, [
+    { path: 'userId', select: 'fullName profile' },
+    { path: 'commentsReply', select: 'message userId likes commentsReply' },
+  ]);
 
+  // Recursively populate each reply
+  if (doc.commentsReply && doc.commentsReply.length > 0) {
+    doc.commentsReply = await Promise.all(
+      doc.commentsReply.map((reply: any) => deepPopulateReplies(reply, depth)),
+    );
+  }
 
-const getAllCommentByDoctorQuery = async (id:string) => {
+  return doc;
+};
 
-  const result = await Comments.find({ doctorId: id })
+const getAllCommentByDoctorQuery = async (id: string) => {
+  let result = await Comments.find({ postId: id })
     .populate({
-      path: 'doctorId',
-      select: 'fullName profile', 
+      path: 'postId',
+      select: 'fullName profile',
     })
     .populate({
       path: 'userId',
-      select: 'fullName profile', 
-    })
-    .populate({
-      path: 'commentsReply', 
-      select: 'message userId likes commentsReply',
-      populate: [
-        {
-          path: 'userId', 
-          select: 'fullName profile',
-        },
-        {
-          path: 'commentsReply', 
-          select: 'message userId likes commentsReply',
-          populate: [
-            {
-              path: 'userId', 
-              select: 'fullName profile',
-            },
-            {
-              path: 'commentsReply', 
-              select: 'message userId',
-              populate: [
-                {
-                  path: 'userId', 
-                  select: 'fullName profile',
-                },
-              ],
-            },
-          ],
-        },
-      ],
+      select: 'fullName profile',
     });
+  // .populate({
+  //   path: 'commentsReply',
+  //   select: 'message userId likes commentsReply',
+  //   populate: [
+  //     {
+  //       path: 'userId',
+  //       select: 'fullName profile',
+  //     },
+  //     {
+  //       path: 'commentsReply',
+  //       select: 'message userId likes commentsReply',
+  //       populate: [
+  //         {
+  //           path: 'userId',
+  //           select: 'fullName profile',
+  //         },
+  //         {
+  //           path: 'commentsReply',
+  //           select: 'message userId',
+  //           populate: [
+  //             {
+  //               path: 'userId',
+  //               select: 'fullName profile',
+  //             },
+  //           ],
+  //         },
+  //       ],
+  //     },
+  //   ],
+  // });
+
+  // Apply deep population for each top-level comment
+  result = await Promise.all(
+    result.map((comment) => deepPopulateReplies(comment, 4)), // 5 = max depth
+  );
+
+  if (!result.length) {
+    throw new AppError(403, 'No comments found for this doctor!');
+  }
 
   console.log('result', result);
-
 
   if (!result || result.length === 0) {
     throw new AppError(403, 'No comments found for this doctor!');
   }
 
   return result;
-  
 };
+
+
+// const getAllCommentByDoctorQuery = async (id:string) => {
+
+//   const result = await Comments.find({ doctorId: id })
+//     .populate({
+//       path: 'doctorId',
+//       select: 'fullName profile', 
+//     })
+//     .populate({
+//       path: 'userId',
+//       select: 'fullName profile', 
+//     })
+//     .populate({
+//       path: 'commentsReply', 
+//       select: 'message userId likes commentsReply',
+//       populate: [
+//         {
+//           path: 'userId', 
+//           select: 'fullName profile',
+//         },
+//         {
+//           path: 'commentsReply', 
+//           select: 'message userId likes commentsReply',
+//           populate: [
+//             {
+//               path: 'userId', 
+//               select: 'fullName profile',
+//             },
+//             {
+//               path: 'commentsReply', 
+//               select: 'message userId',
+//               populate: [
+//                 {
+//                   path: 'userId', 
+//                   select: 'fullName profile',
+//                 },
+//               ],
+//             },
+//           ],
+//         },
+//       ],
+//     });
+
+//   console.log('result', result);
+
+
+//   if (!result || result.length === 0) {
+//     throw new AppError(403, 'No comments found for this doctor!');
+//   }
+
+//   return result;
+  
+// };
  
 
 
