@@ -48,6 +48,23 @@ const userSchema = new Schema<TUser>(
       required: false,
       default: '',
     },
+    isSubscribed:{
+      type: Boolean,
+      default: false,
+    },
+    hasAccess: {
+      type: Boolean,
+      default: false,
+    },
+    subscriptionId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Subscription',
+      default: null,
+    },
+    isFreeTrial: {
+      type: Boolean,
+      default: false,
+    },
     assistantId: {
       type: Schema.Types.ObjectId,
       ref: 'Assistant',

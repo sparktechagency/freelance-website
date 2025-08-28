@@ -580,8 +580,8 @@ const createCheckout = async (userId: any, payload: any) => {
   const sessionData: any = {
     payment_method_types: ['card'],
     mode: 'payment',
-    success_url: `http://10.10.7.107:5003/api/v1/payment/success`,
-    cancel_url: `http://10.10.7.107:5003/api/v1/payment/cancel`,
+    success_url: config.stripe.stripe_payment_success_url,
+    cancel_url: config.stripe.stripe_payment_cancel_url,
     line_items: lineItems,
     metadata: {
       userId: String(userId),

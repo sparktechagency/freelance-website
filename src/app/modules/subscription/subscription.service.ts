@@ -27,10 +27,14 @@ const createSubscription = async (payload: any, session?: any) => {
     );
     if (!existingPackage) throw new AppError(404, 'Service package not found!');
 
-    if (['yearly', 'monthly'].includes(existingPackage.type)) {
+    if (
+      ['1 month', '3 months', '6 months', '1 year'].includes(
+        existingPackage.duration,
+      )
+    ) {
       const existingSubscription = await Subscription.findOne({
         userId: payload.userId,
-        type: existingPackage.type,
+        type: existingPackage.duration,
         isDeleted: false,
         status: ['running', 'completed'],
       }).session(createdSession);
@@ -42,7 +46,7 @@ const createSubscription = async (payload: any, session?: any) => {
         );
       }
 
-      const days = existingPackage.type === 'monthly' ? 30 : 365;
+      const days = existingPackage.duration === '1 month' ? 30 : 365;
       payload.endDate = calculateEndDate(new Date(), days);
     } else {
       const runningSubscription = await Subscription.findOne({
@@ -60,7 +64,7 @@ const createSubscription = async (payload: any, session?: any) => {
     payload.price = existingPackage.price;
     payload.meetCount = existingPackage.meetCount;
     payload.meetDuration = existingPackage.meetDuration;
-    payload.type = existingPackage.type;
+    payload.type = existingPackage.duration;
 
     const result = await Subscription.create([payload], {
       session: createdSession,

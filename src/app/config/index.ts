@@ -12,6 +12,8 @@ const aws = {
 const stripe = {
   stripe_api_key: process.env.STRIPE_API_KEY,
   stripe_api_secret: process.env.STRIPE_API_SECRET,
+  stripe_payment_success_url: process.env.SUCCESS_URL,
+  stripe_payment_cancel_url: process.env.CANCEL_URL,
 };
 
 export default {

@@ -29,9 +29,9 @@ const packageSchema = new Schema<TPackage>(
       required: true,
       default: [],
     },
-    type: {
+    duration: {
       type: String,
-      enum: ['monthly', 'yearly'],
+      enum: ['1 month', '3 months', '6 months', '1 year'],
       required: true,
     },
     meetCount: {
@@ -43,6 +43,18 @@ const packageSchema = new Schema<TPackage>(
       type: Number,
       required: true,
       min: 0,
+    },
+    productId: {
+      type: String,
+      required: true,
+    },
+    priceId: {
+      type: String,
+      required: true,
+    },
+    paymentLink: {
+      type: String,
+      required: true,
     },
     isDeleted: {
       type: Boolean,

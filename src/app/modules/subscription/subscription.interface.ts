@@ -1,7 +1,7 @@
 import { Types } from "mongoose";
 
 export type TSubscription = {
-  type: string;
+  duration: '1 month' | '3 months' | '6 months' | '1 year';
   userId: Types.ObjectId;
   packageId: Types.ObjectId;
   price: number;

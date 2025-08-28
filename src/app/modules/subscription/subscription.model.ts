@@ -1,9 +1,10 @@
 
 import mongoose, { Schema } from 'mongoose';
+import { TSubscription } from './subscription.interface';
 
-const subscriptionSchema = new Schema(
+const subscriptionSchema = new Schema<TSubscription>(
   {
-    type: { type: String, required: true },
+    duration: { type: String, enum: ['1 month', '3 months', '6 months', '1 year'], required: true },
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     packageId: {
       type: Schema.Types.ObjectId,

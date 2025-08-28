@@ -5,6 +5,7 @@ import { TPackage } from './package.interface';
 import Package from './package.model';
 import { access, unlink } from 'fs/promises';
 import { deleteFromS3, uploadToS3 } from '../../utils/s3';
+import { createSubscriptionProduct } from '../../helpers/stripe/stripe/createSubscriptionProductHelper';
 
 
   const createPackage = async (files: any, payload: TPackage) => {
@@ -34,6 +35,23 @@ import { deleteFromS3, uploadToS3 } from '../../utils/s3';
           const image: any = files.image[0].path.replace(/^public[\\/]/, '');
           payload.image = image;
         }
+
+        const stripeProductData = {
+          name: payload.name,
+          price: payload.price,
+          duration: payload.duration,
+
+        }
+
+      const stripeProduct = await  createSubscriptionProduct(stripeProductData);
+
+      if (!stripeProduct) {
+        throw new AppError(404, 'Stripe product not found!');
+      }
+
+      payload.priceId = stripeProduct.priceId;
+      payload.productId = stripeProduct.productId;
+      payload.paymentLink = stripeProduct.paymentLink;
 
 
       const result = await Package.create(payload);

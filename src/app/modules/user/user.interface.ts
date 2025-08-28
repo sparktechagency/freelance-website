@@ -21,6 +21,10 @@ export interface TUserCreate {
 
 export interface TUser extends TUserCreate {
   _id: string;
+  isSubscribed: boolean;
+  hasAccess: boolean;
+  subscriptionId: Types.ObjectId;
+  isFreeTrial: boolean;
   profile: string;
   isActive: boolean;
   isDeleted: boolean;
