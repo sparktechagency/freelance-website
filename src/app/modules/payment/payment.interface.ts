@@ -8,6 +8,5 @@ export type TPayment = {
   transactionId: string;
   transactionDate: Date;
   subcriptionId?: Types.ObjectId;
-  sessionId?: string;
   isRefund: boolean;
 };

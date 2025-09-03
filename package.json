@@ -15,7 +15,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:prod": "node ./dist/server.js",
     "prepare": "husky",
-    "create_module": "ts-node-dev src/script/createModule.ts"
+    "create_module": "ts-node-dev src/script/createModule.ts",
+    "dev:stripe": "stripe listen --forward-to http://10.10.7.107:5003/api/v1/better-habits-payment-webhook"
   },
   "author": "Md. Sohag Hossain",
   "license": "ISC",

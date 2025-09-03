@@ -7,26 +7,17 @@ import notificationRoutes from '../modules/notification/notification.route';
 import paymentRouter from '../modules/payment/payment.route';
 // import walletRouter from '../modules/wallet/wallet.route';
 import withdrawRouter from '../modules/withdraw/withdraw.route';
-import reviewRouter from '../modules/ratings/ratings.route';
+// import reviewRouter from '../modules/ratings/ratings.route';
 import chatRouter from '../modules/chat/chat.route';
 import messageRouter from '../modules/message/message.route';
 // import favoriteProductRoutes from '../modules/favorite/favorite.route';
 import faqRouter from '../modules/faq/faq.route';
 import contactUsRouter from '../modules/contactUs/contactUs.route';
 import reportRouter from '../modules/report/report.route';
-import doctorAvailableRouter from '../modules/doctor/doctor.route';
-import doctorBookingRouter from '../modules/doctorBooking/doctorBooking.route';
 import commentsRouter from '../modules/comments/comments.route';
-import questionnaireRouter from '../modules/questionnaire/questionnaire.route';
-import questionnaireAnswersRouter from '../modules/questionnaireAnswers/questionnaireAnswers.route';
-import packageRouter from '../modules/package/package.route';
-import doctorRouter from '../modules/doctor/doctor.route';
 import categoryRoutes from '../modules/category/category.route';
-import courseRouter from '../modules/course/course.route';
-import articleRouter from '../modules/article/article.route';
-import favoriteRoutes from '../modules/favorite/favorite.route';
+// import favoriteRoutes from '../modules/favorite/favorite.route';
 import postRouter from '../modules/post/post.route';
-import subcriptionRouter from '../modules/subscription/subscription.route';
 import reportcommentsRouter from '../modules/reportComments/reportComments.route';
 
 const router = Router();
@@ -53,10 +44,10 @@ const moduleRoutes = [
     path: '/notification',
     route: notificationRoutes,
   },
-  {
-    path: '/favorite/saved',
-    route: favoriteRoutes,
-  },
+  // {
+  //   path: '/favorite/saved',
+  //   route: favoriteRoutes,
+  // },
   // {
   //   path: '/wallet',
   //   route: walletRouter,
@@ -70,10 +61,10 @@ const moduleRoutes = [
     route: withdrawRouter,
   },
 
-  {
-    path: '/review',
-    route: reviewRouter,
-  },
+  // {
+  //   path: '/review',
+  //   route: reviewRouter,
+  // },
   {
     path: '/chat',
     route: chatRouter,
@@ -97,50 +88,17 @@ const moduleRoutes = [
     path: '/contact-us',
     route: contactUsRouter,
   },
-  {
-    path: '/doctor-available',
-    route: doctorAvailableRouter,
-  },
-  {
-    path: '/doctor-booking',
-    route: doctorBookingRouter,
-  },
+  
   {
     path: '/comments',
     route: commentsRouter,
   },
-  {
-    path: '/questionnaire',
-    route: questionnaireRouter,
-  },
-  {
-    path: '/questionnaire-answers',
-    route: questionnaireAnswersRouter,
-  },
-  {
-    path: '/package',
-    route: packageRouter,
-  },
-  {
-    path: '/subscription',
-    route: subcriptionRouter,
-  },
-  {
-    path: '/doctor',
-    route: doctorRouter,
-  },
+  
   {
     path: '/category',
     route: categoryRoutes,
   },
-  {
-    path: '/course',
-    route: courseRouter,
-  },
-  {
-    path: '/article',
-    route: articleRouter,
-  },
+ 
   {
     path: '/post',
     route: postRouter,

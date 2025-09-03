@@ -34,11 +34,6 @@ const paymentSchema = new Schema<TPayment>(
       ref: 'Subcription',
       required: true,
     },
-    sessionId: {
-      type: String,
-      required: true,
-    },
-
     isRefund: {
       type: Boolean,
       required: true,

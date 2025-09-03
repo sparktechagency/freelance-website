@@ -17,7 +17,6 @@ import axios from 'axios';
 import paypalClient from '../../utils/paypal';
 import paypal from '@paypal/checkout-server-sdk';
 import * as paypalPayouts from '@paypal/payouts-sdk';
-import Subscription from '../subscription/subscription.model';
 
 
 type SessionData = Stripe.Checkout.Session;
@@ -557,199 +556,240 @@ const getAllSubscriptionUsersByWeekly = async (days: string) => {
 
 
 const createCheckout = async (userId: any, payload: any) => {
-  console.log('stripe payment', payload);
-  let session = {} as { id: string };
+  // console.log('stripe payment', payload);
+  // let session = {} as { id: string };
+  //  const isExistPackage = await Package.findOne({
+  //    _id: payload.packageId
+  //  });
+  //  if (!isExistPackage) {
+  //    throw new AppError(404, 'Package not found');
+  //  }
+
+  //  const userAllready7DaysFreeTrial = await User.findById(userId);
+
+  //  if (!userAllready7DaysFreeTrial) {
+  //   throw new AppError(404, 'User not found!!');
+  //  }
 
 
+  // // console.log('lineItems=', lineItems);
 
-  const lineItems = [
-    {
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: 'Amount',
-        },
-        unit_amount: Math.round(payload.amount * 100),
-      },
-      quantity: 1,
-    },
-  ];
+  // let sessionData:any;
 
-  console.log('lineItems=', lineItems);
+  // if (userAllready7DaysFreeTrial.isFreeTrial) {
+  //    sessionData = {
+  //     payment_method_types: ['card'],
+  //     mode: 'subscription',
+  //     success_url: config.stripe.stripe_payment_success_url,
+  //     cancel_url: config.stripe.stripe_payment_cancel_url,
+  //     line_items: [
+  //       {
+  //         price: String(isExistPackage.priceId),
+  //         quantity: 1,
+  //       },
+  //     ],
+  //     subscription_data: {
+  //       metadata: {
+  //         userId: String(userId),
+  //         packageId: String(isExistPackage._id),
+  //       },
+  //     },
+  //     metadata: {
+  //       userId: String(userId),
+  //       packageId: String(payload.packageId),
+  //     },
+  //   };
 
-  const sessionData: any = {
-    payment_method_types: ['card'],
-    mode: 'payment',
-    success_url: config.stripe.stripe_payment_success_url,
-    cancel_url: config.stripe.stripe_payment_cancel_url,
-    line_items: lineItems,
-    metadata: {
-      userId: String(userId),
-      subcriptionId: String(payload.subscriptionId),
-    },
-  };
+  // }else{
+  //    sessionData = {
+  //     payment_method_types: ['card'],
+  //     mode: 'subscription',
+  //     success_url: config.stripe.stripe_payment_success_url,
+  //     cancel_url: config.stripe.stripe_payment_cancel_url,
+  //     line_items: [
+  //       {
+  //         price: String(isExistPackage.priceId),
+  //         quantity: 1,
+  //       },
+  //     ],
+  //     subscription_data: {
+  //       trial_period_days: 7,
+  //       metadata: {
+  //         userId: String(userId),
+  //         packageId: String(isExistPackage._id),
+  //       },
+  //     },
+  //     metadata: {
+  //       userId: String(userId),
+  //       packageId: String(payload.packageId),
+  //     },
+  //   };
 
-  console.log('sessionData=', sessionData);
+  // }
 
-  try {
-    console.log('try session');
-    session = await stripe.checkout.sessions.create(sessionData);
-    console.log('session==', session);
+  
 
-  } catch (error) {
-    console.log('Error', error);
-  }
+  // console.log('sessionData=', sessionData);
 
-  console.log('try session 22');
-  const { id: session_id, url }: any = session || {};
+  // try {
+  //   console.log('try session');
+  //   session = await stripe.checkout.sessions.create(sessionData);
+  //   console.log('session==', session);
 
-  console.log({ url });
+  // } catch (error) {
+  //   console.log('Error', error);
+  // }
 
-  return { url };
+  // console.log('try session 22');
+  // const { id: session_id, url }: any = session || {};
+
+  // console.log({ url });
+
+  // return { url };
 };
 
 const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
-  try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        console.log(
-          'hit hise webhook controller servie checkout.session.completed',
-        );
-        const sessionData = event.data.object as Stripe.Checkout.Session;
-        const {
-          id: sessionId,
-          payment_intent: paymentIntentId,
-          metadata,
-        }: SessionData = sessionData;
-        console.log('metadata==', metadata);
-        const subcriptionId = metadata?.subcriptionId as string;
-        const userId = metadata?.userId as string;
+  // try {
+  //   switch (event.type) {
+  //     case 'checkout.session.completed': {
+  //       console.log(
+  //         'hit hise webhook controller servie checkout.session.completed',
+  //       );
+  //       const sessionData = event.data.object as Stripe.Checkout.Session;
+  //       const {
+  //         id: sessionId,
+  //         payment_intent: paymentIntentId,
+  //         metadata,
+  //       }: SessionData = sessionData;
+  //       console.log('metadata==', metadata);
+  //       const subcriptionId = metadata?.subcriptionId as string;
+  //       const userId = metadata?.userId as string;
 
-        if (!paymentIntentId) {
-          throw new AppError(
-            httpStatus.BAD_REQUEST,
-            'Payment Intent ID not found in session',
-          );
-        }
+  //       if (!paymentIntentId) {
+  //         throw new AppError(
+  //           httpStatus.BAD_REQUEST,
+  //           'Payment Intent ID not found in session',
+  //         );
+  //       }
 
-        const paymentIntent = await stripe.paymentIntents.retrieve(
-          paymentIntentId as string,
-        );
+  //       const paymentIntent = await stripe.paymentIntents.retrieve(
+  //         paymentIntentId as string,
+  //       );
 
-        if (!paymentIntent || paymentIntent.amount_received === 0) {
-          throw new AppError(httpStatus.BAD_REQUEST, 'Payment Not Successful');
-        }
+  //       if (!paymentIntent || paymentIntent.amount_received === 0) {
+  //         throw new AppError(httpStatus.BAD_REQUEST, 'Payment Not Successful');
+  //       }
 
-        console.log('===subcriptionId', subcriptionId);
+  //       console.log('===subcriptionId', subcriptionId);
 
-        const subscription = await Subscription.findByIdAndUpdate(
-          subcriptionId,
-          { status: 'running' },
-          { new: true, session },
-        );
+  //       const subscription = await Subscription.findByIdAndUpdate(
+  //         subcriptionId,
+  //         { status: 'running' },
+  //         { new: true, session },
+  //       );
 
-        console.log('===subscription', subscription);
+  //       console.log('===subscription', subscription);
 
-        if (!subscription) {
-          throw new AppError(httpStatus.BAD_REQUEST, 'subscription not found');
-        }
+  //       if (!subscription) {
+  //         throw new AppError(httpStatus.BAD_REQUEST, 'subscription not found');
+  //       }
 
-        console.log('===subscription', subscription);
+  //       console.log('===subscription', subscription);
 
-        const paymentData: any = {
-          userId: userId,
-          amount: subscription?.price,
-          method: 'stripe',
-          transactionId: paymentIntentId,
-          subcriptionId: subscription?._id,
-          status: 'paid',
-          sessionId: sessionId,
-          transactionDate: subscription?.createdAt,
-        };
+  //       const paymentData: any = {
+  //         userId: userId,
+  //         amount: subscription?.price,
+  //         method: 'stripe',
+  //         transactionId: paymentIntentId,
+  //         subcriptionId: subscription?._id,
+  //         status: 'paid',
+  //         sessionId: sessionId,
+  //         // transactionDate: subscription?.createdAt,
+  //       };
 
-        const payment = await Payment.create([paymentData], { session });
-        console.log('===payment', payment);
-        if (payment.length === 0) {
-          throw new AppError(
-            httpStatus.BAD_REQUEST,
-            'Payment record creation failed',
-          );
-        }
+  //       const payment = await Payment.create([paymentData], { session });
+  //       console.log('===payment', payment);
+  //       if (payment.length === 0) {
+  //         throw new AppError(
+  //           httpStatus.BAD_REQUEST,
+  //           'Payment record creation failed',
+  //         );
+  //       }
 
-        const user = await User.findById(userId);
-        if (!user) {
-          throw new AppError(httpStatus.BAD_REQUEST, 'User not found');
-        }
+  //       const user = await User.findById(userId);
+  //       if (!user) {
+  //         throw new AppError(httpStatus.BAD_REQUEST, 'User not found');
+  //       }
 
-        const notificationData = {
-          userId: userId,
-          message: 'Subscription create successfull!!',
-          type: 'success',
-        };
+  //       const notificationData = {
+  //         userId: userId,
+  //         message: 'Subscription create successfull!!',
+  //         type: 'success',
+  //       };
 
-        const notificationData1 = {
-          role: 'admin',
-          message: 'New Booking create successfull!!',
-          type: 'success',
-        };
+  //       const notificationData1 = {
+  //         role: 'admin',
+  //         message: 'New Booking create successfull!!',
+  //         type: 'success',
+  //       };
 
-        const [notification, notification1] = await Promise.all([
-          notificationService.createNotification(notificationData),
-          notificationService.createNotification(notificationData1),
-        ]);
+  //       const [notification, notification1] = await Promise.all([
+  //         notificationService.createNotification(notificationData),
+  //         notificationService.createNotification(notificationData1),
+  //       ]);
 
-        if (!notification || !notification1) {
-          throw new AppError(404, 'Notification create faild!!');
-        }
+  //       if (!notification || !notification1) {
+  //         throw new AppError(404, 'Notification create faild!!');
+  //       }
 
-        await Subscription.deleteMany(
-          { userId, status: 'pending' },
-          { session },
-        );
+  //       await Subscription.deleteMany(
+  //         { userId, status: 'pending' },
+  //         { session },
+  //       );
 
-        await session.commitTransaction();
-        console.log('Payment completed successfully:', {
-          sessionId,
-          paymentIntentId,
-        });
+  //       await session.commitTransaction();
+  //       console.log('Payment completed successfully:', {
+  //         sessionId,
+  //         paymentIntentId,
+  //       });
 
-        break;
-      }
+  //       break;
+  //     }
 
-      case 'checkout.session.async_payment_failed': {
-        const sessionData = event.data.object as Stripe.Checkout.Session;
-        const {
-          id: sessionId,
-          payment_intent: paymentIntentId,
-          metadata,
-        }: SessionData = sessionData;
-        const subcriptionId = metadata?.subcriptionId as string;
-        const userId = metadata?.userId as string;
+  //     case 'checkout.session.async_payment_failed': {
+  //       const sessionData = event.data.object as Stripe.Checkout.Session;
+  //       const {
+  //         id: sessionId,
+  //         payment_intent: paymentIntentId,
+  //         metadata,
+  //       }: SessionData = sessionData;
+  //       const subcriptionId = metadata?.subcriptionId as string;
+  //       const userId = metadata?.userId as string;
 
 
-       await Subscription.deleteMany(
-         { userId, status: 'pending' },
-         { session },
-       );
+  //      await Subscription.deleteMany(
+  //        { userId, status: 'pending' },
+  //        { session },
+  //      );
 
-       await session.commitTransaction();
-        break;
-      }
+  //      await session.commitTransaction();
+  //       break;
+  //     }
 
-      default:
-        // // console.log(`Unhandled event type: ${event.type}`);
-        // res.status(400).send();
-        return;
-    }
-  } catch (err) {
-    await session.abortTransaction();
-    console.error('Error processing webhook event:', err);
-  } finally {
-    session.endSession();
-  }
+  //     default:
+  //       // // console.log(`Unhandled event type: ${event.type}`);
+  //       // res.status(400).send();
+  //       return;
+  //   }
+  // } catch (err) {
+  //   await session.abortTransaction();
+  //   console.error('Error processing webhook event:', err);
+  // } finally {
+  //   session.endSession();
+  // }
 };
 
 // const paymentRefundService = async (
