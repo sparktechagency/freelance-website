@@ -29,12 +29,6 @@ const userSchema = new Schema<TUser>(
       required: true,
       select: false,
     },
-    phone: {
-      type: String,
-      required: false,
-      default: '',
-    },
-
     isActive: {
       type: Boolean,
       default: true,
@@ -43,36 +37,50 @@ const userSchema = new Schema<TUser>(
       type: Boolean,
       default: false,
     },
-    address: {
+    designation: {
       type: String,
       required: false,
       default: '',
     },
-    isSubscribed:{
+    yearsOfExperience: {
+      type: String,
+      required: false,
+      default: '',
+    },
+    location: {
+      type: String,
+      required: false,
+      default: '',
+    },
+    isSubscribed: {
       type: Boolean,
       default: false,
     },
-    hasAccess: {
+    isAvailable: {
       type: Boolean,
       default: false,
+    },
+    isVarified: {
+      type: Boolean,
+      default: false,
+    },
+    dailyRate: {
+      type: Number,
+      default: 0,
     },
     subscriptionId: {
       type: Schema.Types.ObjectId,
       ref: 'Subscription',
       default: null,
     },
-    isFreeTrial: {
-      type: Boolean,
-      default: false,
-    },
-    assistantId: {
+    clientId: {
       type: Schema.Types.ObjectId,
-      ref: 'Assistant',
+      ref: 'Client',
       default: null,
     },
-    doctorId: {
+    freelancerId: {
       type: Schema.Types.ObjectId,
-      ref: 'Doctor',
+      ref: 'Freelancer',
       default: null,
     },
   },
@@ -136,7 +144,7 @@ userSchema.statics.isUserActive = async function (email: string) {
     email: email,
     isDeleted: false,
     isActive: true,
-  }).select('+password');
+  }).select('+password profile fullName email role');
 };
 
 userSchema.statics.IsUserExistById = async function (id: string) {

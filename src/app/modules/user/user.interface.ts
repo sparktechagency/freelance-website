@@ -14,22 +14,24 @@ export interface TUserCreate {
   fullName: string;
   email: string;
   password: string;
-  phone: string;
   role: (typeof USER_ROLE)[keyof typeof USER_ROLE];
-  address: string;
+  designation: string;
+  yearsOfExperience: string;
+  location: string;
+  isAvailable: boolean;
+  isVarified: boolean;
+  dailyRate: number;
 }
 
 export interface TUser extends TUserCreate {
   _id: string;
   isSubscribed: boolean;
-  hasAccess: boolean;
   subscriptionId: Types.ObjectId;
-  isFreeTrial: boolean;
   profile: string;
   isActive: boolean;
   isDeleted: boolean;
-  doctorId: Types.ObjectId;
-  assistantId: Types.ObjectId;
+  clientId: Types.ObjectId;
+  freelancerId: Types.ObjectId;
 }
 
 export interface DeleteAccountPayload {

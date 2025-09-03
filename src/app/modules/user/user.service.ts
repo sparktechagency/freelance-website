@@ -34,7 +34,7 @@ const createUserToken = async (payload: TUserCreate) => {
   const { role, email, fullName, password, } = payload;
 
   // user role check
-  if (!(role === USER_ROLE.USER  || role === USER_ROLE.DOCTOR || role === USER_ROLE.ASSISTANT)) {
+  if (!(role === USER_ROLE.CLIENT  || role === USER_ROLE.FREELANCER)) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
   }
 
@@ -131,7 +131,7 @@ console.log('token', token)
   }
 
   const { password, email, fullName, role, profile, ...rest } = decodeData;
-  if (!(role === USER_ROLE.USER || role === USER_ROLE.DOCTOR || role === USER_ROLE.ASSISTANT)) {
+  if (!( role === USER_ROLE.CLIENT || role === USER_ROLE.FREELANCER)) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
   }
 
@@ -206,7 +206,7 @@ const creatorUserService = async (
 
 const { role, email, fullName, password, ...rest } = payload;
 
-  if (!(payload.role === USER_ROLE.DOCTOR || payload.role === USER_ROLE.ASSISTANT || payload.role === USER_ROLE.USER)) {
+  if (!( payload.role === USER_ROLE.CLIENT || payload.role === USER_ROLE.FREELANCER)) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
   }
 
@@ -376,13 +376,13 @@ const getAllUserQuery = async (query: Record<string, unknown>) => {
 
 const getAllUserCount = async () => {
   
-  const allBusinessCount = await User.countDocuments({
-    role: USER_ROLE.USER,
-  });
-  const result = {
-    allBusinessCount,
-  };
-  return result;
+  // const allBusinessCount = await User.countDocuments({
+  //   role: USER_ROLE.USER,
+  // });
+  // const result = {
+  //   allBusinessCount,
+  // };
+  return 'result';
 };
 
 const getAllUserRatio = async (year: number) => {

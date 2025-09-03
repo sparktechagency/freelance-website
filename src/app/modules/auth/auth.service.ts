@@ -23,7 +23,7 @@ import { OTPVerifyAndCreateUserProps, userService } from '../user/user.service';
 
 // Login
 const login = async (payload: TLogin) => {
-  const user = await User.isUserActive(payload?.email);
+  const user = await User.isUserActive(payload?.email)
   if (!user) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User not found!!');
   }
