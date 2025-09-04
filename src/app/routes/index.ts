@@ -25,6 +25,7 @@ import serviceTypeRoutes from '../modules/serviceType/serviceType.route';
 import jobsRoutes from '../modules/jobs/jobs.route';
 import tenderRoutes from '../modules/tenders/tenders.route';
 import packageRouter from '../modules/package/package.route';
+import subcriptionRouter from '../modules/subscription/subscription.route';
 
 const router = Router();
 
@@ -127,6 +128,10 @@ const moduleRoutes = [
   {
     path: '/package',
     route: packageRouter,
+  },
+  {
+    path: '/subscription',
+    route: subcriptionRouter,
   },
 
   {

@@ -2,13 +2,13 @@ import { Types } from "mongoose";
 
 export type TSubscription = {
   type: string;
+  title: string;
   userId: Types.ObjectId;
   packageId: Types.ObjectId;
   price: number;
   status: string;
   endDate: Date;
-  videoCount: number;
-  takeVideoCount: number;
+  tenderCount: number | string;
+  takeTenderCount: number;
   isDeleted: boolean;
-  transactionId:string;
 };

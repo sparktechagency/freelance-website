@@ -18,40 +18,36 @@ import { deleteFromS3, uploadToS3 } from '../../utils/s3';
           throw new AppError(403, 'Package already exists!!');
         }
 
-        const monthlyPackage: any = await Package.findOne({
-          type:"monthly",
-        });
+        // const monthlyPackage: any = await Package.findOne({
+        //   type:"monthly",
+        // });
 
-        if (monthlyPackage && payload.type === 'monthly') {
-          throw new AppError(403, 'Monthly Package already exists!!');
-        }
-        const yearlyPackage: any = await Package.findOne({
-          type: 'yearly',
-        });
+        // if (monthlyPackage && payload.type === 'monthly') {
+        //   throw new AppError(403, 'Monthly Package already exists!!');
+        // }
+        // const yearlyPackage: any = await Package.findOne({
+        //   type: 'yearly',
+        // });
 
-        if (yearlyPackage && payload.type === 'yearly') {
-          throw new AppError(403, 'Yearly Package already exists!!');
-        }
+        // if (yearlyPackage && payload.type === 'yearly') {
+        //   throw new AppError(403, 'Yearly Package already exists!!');
+        // }
 
 
 
         if (files.image && files.image.length > 0) {
-          const image: any = await uploadToS3({
-            file: files.image[0],
-            fileName: files.image[0].originalname,
-            folder: 'packages/',
-          });
-          payload.image = image;
+          payload.image = files.image[0].path.replace(/^public[\\/]/, '');
+        }
+        console.log(typeof payload.tenderCount);
+
+        if ( payload.tenderCount !== 'unlimited'){
+          payload.tenderCount = Number(payload.tenderCount);
         }
 
-        payload.videoCount = Number(payload.videoCount);
 
       const result = await Package.create(payload);
 
-      if (result) {
-        const fileDeletePath = `${files.image[0].path}`;
-        await unlink(fileDeletePath);
-      }
+     
       return result;
     } catch (error) {
       try {
@@ -65,7 +61,7 @@ import { deleteFromS3, uploadToS3 } from '../../utils/s3';
   };
 
 const getAllPackageQuery = async (query: Record<string, unknown>) => {
-  const packageQuery = new QueryBuilder(Package.find({isDeleted: false, type: 'one_time'}), query)
+  const packageQuery = new QueryBuilder(Package.find({isDeleted: false}), query)
     .search([])
     .filter()
     .sort()

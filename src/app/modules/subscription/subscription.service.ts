@@ -37,40 +37,76 @@ const createSubscription = async (payload: any, session?: any) => {
       existingPackage.type === 'yearly' ||
       existingPackage.type === 'monthly'
     ) {
+      // const existingSubscription = await Subscription.findOne({
+      //   userId: payload.userId,
+      //   type: existingPackage.type,
+      //   title: existingPackage.title,
+      //   isDeleted: false,
+      // }).session(createdSession);
+      // console.log('existingSubscription==', existingSubscription);
+
+      // if (existingSubscription) {
+      //   throw new AppError(400, 'You already have a Subscription! Please check your profile.');
+      // }
+
+      if (existingPackage?.title === 'bussiness') {
+        console.log('bussiness');
+        const existingRunningSubscription = await Subscription.findOne({
+          userId: payload.userId,
+          type: existingPackage.type,
+          title: existingPackage.title,
+          packageId:existingPackage._id,
+          endDate: { $gt: new Date() },
+          $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
+          isDeleted: false,
+        }).session(createdSession);
+
+        if (existingRunningSubscription) {
+          throw new AppError(
+            400,
+            'Your subscription is already running! Please check your profile.',
+          );
+        }
+      } else {
+         console.log('enterprise');
+        const existingSubscription = await Subscription.findOne({
+          userId: payload.userId,
+          type: existingPackage.type,
+          title: existingPackage.title,
+          packageId: existingPackage._id,
+          endDate: { $gt: new Date() },
+          isDeleted: false,
+        }).session(createdSession);
+        console.log('existingSubscription==', existingSubscription);
+        if (existingSubscription) {
+          throw new AppError(
+            400,
+            'Your subscription is already running! Please check your profile.',
+          );
+        }
+      }
+
       const existingSubscription = await Subscription.findOne({
         userId: payload.userId,
         type: existingPackage.type,
+        title: existingPackage.title,
+        packageId: existingPackage._id,
         isDeleted: false,
       }).session(createdSession);
 
       if (existingSubscription) {
-        throw new AppError(400, 'You already have a Subscription! Please renew it.');
+        throw new AppError(400, 'You already have a Subscription! Please check your profile.');
       }
 
       payload.price = existingPackage.price;
       const days = existingPackage.type === 'monthly' ? 30 : 365;
       const generateEndDate = calculateEndDate(new Date(), days);
       payload.endDate = generateEndDate;
-      payload.videoCount = existingPackage.videoCount;
+      payload.tenderCount = existingPackage.tenderCount;
       payload.type = existingPackage.type;
+      payload.title = existingPackage.title;
       // payload.status = 'running';
-    } else {
-      console.log('subscription service package==');
-      const runningubscription = await Subscription.findOne({
-        userId: payload.userId,
-        isDeleted: false,
-        endDate: { $gt: new Date() },
-        $expr: { $lt: ['$takeVideoCount', '$videoCount'] },
-      }).session(createdSession);
-
-      // if (runningubscription) {
-      //   throw new AppError(400, 'Your Subscription is already running!');
-      // }
-      payload.price = existingPackage.price;
-      payload.videoCount = existingPackage.videoCount;
-      payload.type = existingPackage.type;
-      // payload.status = 'running';
-    }
+    } 
 
    
 

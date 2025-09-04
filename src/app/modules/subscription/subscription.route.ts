@@ -12,12 +12,16 @@ const upload = fileUpload('./public/uploads/subscription');
 subcriptionRouter
   .post(
     '/create-subscription',
-    auth(USER_ROLE.USER),
+    auth(USER_ROLE.CLIENT),
     // upload.fields([{ name: 'image', maxCount: 1 }]),
     subscriptionController.createSubscription,
   )
-  .get('/', auth(USER_ROLE.USER), subscriptionController.getAllMySubscription)
-  .get('/existe',auth(USER_ROLE.USER), subscriptionController.getExistSubscription)
+  .get('/', auth(USER_ROLE.CLIENT), subscriptionController.getAllMySubscription)
+  .get(
+    '/existe',
+    auth(USER_ROLE.CLIENT),
+    subscriptionController.getExistSubscription,
+  )
   .get('/:id', subscriptionController.getSingleSubscription)
   .patch(
     '/:id',
