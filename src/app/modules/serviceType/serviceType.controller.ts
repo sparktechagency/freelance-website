@@ -4,18 +4,18 @@ import { Request, Response } from 'express';
 import sendResponse from '../../utils/sendResponse';
 import httpStatus from 'http-status';
 import AppError from '../../error/AppError';
-import { categoryService } from './category.service';
+import { createServiceTypeService } from './serviceType.service';
 
-const createCategory = catchAsync(async (req: Request, res: Response) => {
+const createServiceType = catchAsync(async (req: Request, res: Response) => {
   console.log('hit hoise');
 
   const uploadedFiles = req.files as {
     [fieldname: string]: Express.Multer.File[];
   };
 
-  const categoryData = req.body;
+  const ServiceTypeData = req.body;
 
-  console.log({ categoryData });
+  console.log({ ServiceTypeData });
   console.log({ uploadedFiles });
 
   // if (
@@ -28,7 +28,7 @@ const createCategory = catchAsync(async (req: Request, res: Response) => {
 
   if(uploadedFiles && uploadedFiles.image ){
     // throw new AppError(httpStatus.BAD_REQUEST, 'Image is required');
-    categoryData.image = uploadedFiles.image[0].path.replace(
+    ServiceTypeData.image = uploadedFiles.image[0].path.replace(
       /^public[\\/]/,
       '',
     );
@@ -37,71 +37,71 @@ const createCategory = catchAsync(async (req: Request, res: Response) => {
 
   
 
-  console.log({ categoryData });
-  const result = await categoryService.createCategory(categoryData);
+  console.log({ ServiceTypeData });
+  const result = await createServiceTypeService.createServiceType(ServiceTypeData);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     data: result,
-    message: 'Category create successful',
+    message: 'ServiceType create successful',
   });
 });
 
-// const getAllCategory = catchAsync(async (req, res) => {
+// const getAllServiceType = catchAsync(async (req, res) => {
 
-//   const result = await categoryService.getAllCategoryQuery(req.query);
+//   const result = await createServiceTypeService.getAllServiceTypeQuery(req.query);
 
 //   sendResponse(res, {
 //     success: true,
 //     statusCode: httpStatus.OK,
 //     meta: result.meta,
 //     data: result.result,
-//     message: 'Category All are requered successful!!',
+//     message: 'ServiceType All are requered successful!!',
 //   });
 // });
 
-const getAllCategory = catchAsync(async (req, res) => {
-  const result = await categoryService.getAllCategoryQuery(req.query);
+const getAllServiceType = catchAsync(async (req, res) => {
+  const result = await createServiceTypeService.getAllCreateServiceTypeQuery(req.query);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     meta: result.meta,
     data: result.result,
-    message: 'Category All are requered successful!!',
+    message: 'ServiceType All are requered successful!!',
   });
 });
 
-const getAllCategoryByAdmin = catchAsync(async (req, res) => {
-  const result = await categoryService.getAllCategoryByAdminQuery(req.query);
+const getAllServiceTypeByAdmin = catchAsync(async (req, res) => {
+  const result = await createServiceTypeService.getAllCreateServiceTypeByAdminQuery(req.query);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     meta: result.meta,
     data: result.result,
-    message: 'Category All are requered successful!!',
+    message: 'ServiceType All are requered successful!!',
   });
 });
 
-const getSingleCategory = catchAsync(async (req: Request, res: Response) => {
-  const result = await categoryService.getSingleCategory(req.params.id);
+const getSingleServiceType = catchAsync(async (req: Request, res: Response) => {
+  const result = await createServiceTypeService.getSingleCreateServiceType(req.params.id);
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     data: result,
-    message: 'Single Category get successful',
+    message: 'Single ServiceType get successful',
   });
 });
 
-const updateCategory = catchAsync(async (req: Request, res: Response) => {
+const updateServiceType = catchAsync(async (req: Request, res: Response) => {
   console.log('Request received:', req.body, req.files);
   console.log('hit hoise');
   
-  const categoryData = req.body;
-  console.log({ categoryData });
+  const ServiceTypeData = req.body;
+  console.log({ ServiceTypeData });
   
   
 
@@ -113,34 +113,34 @@ const updateCategory = catchAsync(async (req: Request, res: Response) => {
 
   if (uploadedImage?.image && uploadedImage.image.length > 0) {
     // Remove 'public/' or 'public\' from the start of the path
-    categoryData.image = uploadedImage.image[0].path.replace(
+    ServiceTypeData.image = uploadedImage.image[0].path.replace(
       /^public[\\/]/,
       '',
     );
   }
 
   console.log('uploadedImage', uploadedImage);
-  console.log('category data=2', categoryData);
+  console.log('ServiceType data=2', ServiceTypeData);
   console.log('id', req.params.id);
 
   // Call update service with updated data
-  const result = await categoryService.updateCategory(
+  const result = await createServiceTypeService.updateCreateServiceType(
     req.params.id,
-    categoryData,
+    ServiceTypeData,
   );
 
   sendResponse(res, {
     success: true,
     statusCode: httpStatus.OK,
     data: result,
-    message: 'Category updated successfully',
+    message: 'ServiceType updated successfully',
   });
 });
 
-const categoryActiveDeactive = catchAsync(
+const serviceTypeActiveDeactive = catchAsync(
   async (req: Request, res: Response) => {
     const { result, message } =
-      await categoryService.categoryActiveDeactiveService(req.params.id);
+      await createServiceTypeService.createServiceTypeActiveDeactiveService(req.params.id);
 
     sendResponse(res, {
       success: true,
@@ -151,8 +151,8 @@ const categoryActiveDeactive = catchAsync(
   },
 );
 
-const deletedCategory = catchAsync(async (req: Request, res: Response) => {
-  const result = await categoryService.deleteCategory(req.params.id);
+const deletedServiceType = catchAsync(async (req: Request, res: Response) => {
+  const result = await createServiceTypeService.deleteCreateServiceType(req.params.id);
 
   sendResponse(res, {
     success: true,
@@ -162,12 +162,12 @@ const deletedCategory = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const categoryController = {
-  createCategory,
-  getAllCategory,
-  getAllCategoryByAdmin,
-  getSingleCategory,
-  updateCategory,
-  categoryActiveDeactive,
-  deletedCategory,
+export const serviceTypeController = {
+  createServiceType,
+  getAllServiceType,
+  getAllServiceTypeByAdmin,
+  getSingleServiceType,
+  updateServiceType,
+  serviceTypeActiveDeactive,
+  deletedServiceType,
 };

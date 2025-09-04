@@ -1,4 +1,4 @@
-export interface ICategory {
+export interface IServiceType {
   name: string; 
   image?: string; 
   isActive:boolean;

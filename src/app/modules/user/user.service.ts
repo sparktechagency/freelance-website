@@ -17,6 +17,7 @@ import bcrypt from 'bcrypt';
 import Otp from '../otp/otp.model';
 import { imageUrlGenarate } from '../../utils/imageUrl';
 import { sendEmail } from '../../utils/mailSender';
+import FreelancerInfo from '../freelancerInfo/freelancerInfo.model';
 
 export type IFilter = {
   searchTerm?: string;
@@ -169,9 +170,24 @@ console.log('token', token)
  };
 
   const user = await User.create(userData);
+  console.log('user', user);
 
   if (!user) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User creation failed');
+  }
+
+  if (user.role === 'freelancer') {
+    const freelancerInfo = await FreelancerInfo.create({
+      freelancerUserId: user._id,
+    });
+    if(!freelancerInfo){
+      throw new AppError(httpStatus.BAD_REQUEST, 'freelancerInfo creation failed');
+    }
+    
+    await User.findByIdAndUpdate(user._id, {
+      freelancerId: freelancerInfo._id,
+    }, { new: true });
+    
   }
 
 
@@ -432,7 +448,8 @@ const getAllUserRatio = async (year: number) => {
 };
 
 const getUserById = async (id: string) => {
-  const result = await User.findById(id);
+  const result = await User.findById(id)
+    .populate('freelancerId');
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }

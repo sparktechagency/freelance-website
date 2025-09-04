@@ -19,6 +19,12 @@ import categoryRoutes from '../modules/category/category.route';
 // import favoriteRoutes from '../modules/favorite/favorite.route';
 import postRouter from '../modules/post/post.route';
 import reportcommentsRouter from '../modules/reportComments/reportComments.route';
+import freelancerInfoRouter from '../modules/freelancerInfo/freelancerInfo.route';
+import projectRoutes from '../modules/project/project.route';
+import serviceTypeRoutes from '../modules/serviceType/serviceType.route';
+import jobsRoutes from '../modules/jobs/jobs.route';
+import tenderRoutes from '../modules/tenders/tenders.route';
+import packageRouter from '../modules/package/package.route';
 
 const router = Router();
 
@@ -66,6 +72,14 @@ const moduleRoutes = [
   //   route: reviewRouter,
   // },
   {
+    path: '/freelancer-info',
+    route: freelancerInfoRouter,
+  },
+  {
+    path: '/project',
+    route: projectRoutes,
+  },
+  {
     path: '/chat',
     route: chatRouter,
   },
@@ -88,17 +102,33 @@ const moduleRoutes = [
     path: '/contact-us',
     route: contactUsRouter,
   },
-  
+
   {
     path: '/comments',
     route: commentsRouter,
   },
-  
+
   {
     path: '/category',
     route: categoryRoutes,
   },
- 
+  {
+    path: '/service-type',
+    route: serviceTypeRoutes,
+  },
+  {
+    path: '/jobs',
+    route: jobsRoutes,
+  },
+  {
+    path: '/tender',
+    route: tenderRoutes,
+  },
+  {
+    path: '/package',
+    route: packageRouter,
+  },
+
   {
     path: '/post',
     route: postRouter,

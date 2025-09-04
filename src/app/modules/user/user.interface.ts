@@ -18,9 +18,11 @@ export interface TUserCreate {
   designation: string;
   yearsOfExperience: string;
   location: string;
+  language: [string];
   isAvailable: boolean;
   isVarified: boolean;
   dailyRate: number;
+  aboutCompany: string;
 }
 
 export interface TUser extends TUserCreate {
@@ -30,7 +32,7 @@ export interface TUser extends TUserCreate {
   profile: string;
   isActive: boolean;
   isDeleted: boolean;
-  clientId: Types.ObjectId;
+  // clientId: Types.ObjectId;
   freelancerId: Types.ObjectId;
 }
 

@@ -52,6 +52,11 @@ const userSchema = new Schema<TUser>(
       required: false,
       default: '',
     },
+    language: {
+      type: [String],
+      required: false,
+      default: [],
+    },
     isSubscribed: {
       type: Boolean,
       default: false,
@@ -68,19 +73,23 @@ const userSchema = new Schema<TUser>(
       type: Number,
       default: 0,
     },
+    aboutCompany: {
+      type: String,
+      default: '',
+    },
     subscriptionId: {
       type: Schema.Types.ObjectId,
       ref: 'Subscription',
       default: null,
     },
-    clientId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Client',
-      default: null,
-    },
+    // clientId: {
+    //   type: Schema.Types.ObjectId,
+    //   ref: 'Client',
+    //   default: null,
+    // },
     freelancerId: {
       type: Schema.Types.ObjectId,
-      ref: 'Freelancer',
+      ref: 'FreelancerInfo',
       default: null,
     },
   },
