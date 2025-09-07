@@ -5,6 +5,8 @@ import { Category } from '../category/category.model';
 import { ServiceType } from '../serviceType/serviceType.model';
 import { ITenders } from './tenders.interface';
 import { Tender } from './tenders.model';
+import Subscription from '../subscription/subscription.model';
+import Chat from '../chat/chat.model';
 
 const createTender = async (payload: ITenders) => {
   const category = await Category.findById(payload.categoryId);
@@ -17,16 +19,45 @@ const createTender = async (payload: ITenders) => {
     throw new AppError(404, 'serviceType is not found!');
   }
   payload.serviceTypeName = serviceType.name;
+
+  const subscription = await Subscription.findOne({
+    userId: payload.userId,
+    isDeleted: false,
+  });
+
+   if (!subscription) {
+     throw new AppError(403, "You don't have a subscription!");
+   }
+
+  const runningSubscription = await Subscription.findOne({
+    userId: payload.userId,
+    isDeleted: false,
+    endDate: { $gt: new Date() },
+    type: ['monthly', 'yearly'],
+    $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
+  });
+
+  if (!runningSubscription) {
+    throw new AppError(403, 'Your subscription is not active!');
+  }
+
   const result = await Tender.create(payload);
+
+  if(result){
+    if(runningSubscription.type === "monthly"){
+      runningSubscription.takeTenderCount += 1;
+      await runningSubscription.save();
+    }
+  }
   return result;
 };
 
 const getAllCreateTenderQuery = async (query: Record<string, unknown>) => {
   const ServicecreateTenderQuery = new QueryBuilder(
-    Tender.find({ isDeleted: false }),
+    Tender.find({ isDeleted: false, status: 'pending' }),
     query,
   )
-    .search([''])
+    .search(['title', 'description', 'categoryName', 'serviceTypeName'])
     .filter()
     .sort()
     .paginate()
@@ -45,7 +76,7 @@ const getAllCreateTenderByClientQuery = async (
     Tender.find({ isDeleted: false, userId: userId }),
     query,
   )
-    .search([''])
+    .search(['title', 'description', 'categoryName', 'serviceTypeName'])
     .filter()
     .sort()
     .paginate()
@@ -66,6 +97,27 @@ const getSingleCreateTender = async (id: string) => {
   }
 
   return ServicecreateTender[0];
+};
+
+
+const getAllRunningTenderQuery = async (id: string) => {
+  const result = await Tender.find({ isDeleted: false, userId: id, status: 'pending' }).select('_id title');
+  return result;
+};
+
+const respondTender = async (id: string, userId: string) => {
+  // console.log('id ', id);
+ const tender = await Tender.findById(id);  
+ if (!tender) {
+   throw new AppError(404, 'Tender not found!');
+ }
+
+ const chatCreate = await Chat.create({participants: [tender.userId, userId]});
+ if (!chatCreate) {
+   throw new AppError(404, 'Chat not created!');
+ }
+
+  return chatCreate;
 };
 
 const updateCreateTender = async (id: string, payload: Partial<ITenders>) => {
@@ -115,7 +167,9 @@ export const createTenderService = {
   createTender,
   getAllCreateTenderQuery,
   getAllCreateTenderByClientQuery,
+  getAllRunningTenderQuery,
   getSingleCreateTender,
+  respondTender,
   updateCreateTender,
   deleteCreateTender,
 };

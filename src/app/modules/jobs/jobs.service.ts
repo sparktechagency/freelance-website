@@ -23,10 +23,10 @@ const createJobs = async (payload: IJobs) => {
 
 const getAllCreateJobsQuery = async (query: Record<string, unknown>) => {
   const ServicecreateJobsQuery = new QueryBuilder(
-    Jobs.find({ isDeleted: false }),
+    Jobs.find({ isDeleted: false, endDate: { $gt: new Date() } }),
     query,
   )
-    .search([''])
+    .search(['title', 'description', 'categoryName', 'serviceTypeName'])
     .filter()
     .sort()
     .paginate()
@@ -45,7 +45,7 @@ const getAllCreateJobsByClientQuery = async (
     Jobs.find({ isDeleted: false, userId: userId }),
     query,
   )
-    .search([''])
+    .search(['title', 'description', 'categoryName', 'serviceTypeName'])
     .filter()
     .sort()
     .paginate()

@@ -22,6 +22,7 @@ const tendersSchema = new Schema<ITenders>(
     categoryName: { type: String, required: true },
     serviceTypeId: { type: String, required: true },
     serviceTypeName: { type: String, required: true },
+    status: { type: String, enum:['pending', 'running', 'completed'], required: true, default: 'pending' },
     isDeleted: { type: Boolean, default: false, required: true },
   },
   {

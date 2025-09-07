@@ -11,5 +11,6 @@ export interface ITenders {
   categoryName: string;
   serviceTypeId: string;
   serviceTypeName: string;
+  status: string;
   isDeleted: boolean;
 }

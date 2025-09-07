@@ -156,92 +156,15 @@ const getAllMysubscriptionQuery = async (query: Record<string, unknown>, userId:
       isDeleted: false,
       endDate: { $gt: new Date() },
       type: ['monthly', 'yearly'],
-      $expr: { $lt: ['$takeVideoCount', '$videoCount'] },
+      $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
     })
       .populate('packageId')
       .populate('userId');
 
     // console.log('result==', result);
-
     return result;
-
   }
-  else if(query.all && query.all === 'subscription'){
-    console.log('all')
-    delete query.all;
-
-    const subscriptionQuery = new QueryBuilder(
-      Subscription.find({
-        userId: userId,
-        isDeleted: false,
-        type: ['monthly', 'yearly']
-      }).populate('packageId').populate('userId'),
-      query,
-    )
-      .search([])
-      .filter()
-      .sort()
-      .paginate()
-      .fields();
-
-    const result = await subscriptionQuery.modelQuery;
-    console.log('result==', result);
-
-    const meta = await subscriptionQuery.countTotal();
-    return { meta, result };
-
-  }else if (query.all && query.all === 'package') {
-    console.log('query.all==', 'package');
-    delete query.all;
-
-    const subscriptionQuery = new QueryBuilder(
-      Subscription.find({
-        userId: userId,
-        isDeleted: false,
-        type: 'one_time',
-      })
-        .populate('packageId')
-        .populate('userId'),
-      query,
-    )
-      .search([])
-      .filter()
-      .sort()
-      .paginate()
-      .fields();
-
-    const result = await subscriptionQuery.modelQuery;
-    console.log('result==', result);
-
-    const meta = await subscriptionQuery.countTotal();
-    return { meta, result };
-  } else if (query.running && query.running === 'package') {
-    console.log('query.running==', query.running);
-    delete query.running; 
-
-    const subscriptionQuery = new QueryBuilder(
-      Subscription.find({
-        userId: userId,
-        isDeleted: false,
-        type: 'one_time',
-        status: 'pending',
-      })
-        .populate('packageId')
-        .populate('userId'),
-      query,
-    )
-      .search([])
-      .filter()
-      .sort()
-      .paginate()
-      .fields();
-
-    const result = await subscriptionQuery.modelQuery;
-    console.log('result==', result);
-
-    const meta = await subscriptionQuery.countTotal();
-    return { meta, result };
-  } else {
+ else {
     const subscriptionQuery = new QueryBuilder(
       Subscription.find({
         userId: userId,

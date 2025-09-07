@@ -21,7 +21,14 @@ tenderRoutes
 
   .get('', tenderController.getAllTender)
   .get('/me', auth(USER_ROLE.CLIENT), tenderController.getAllTenderByClient)
+  .get('/running-tenders/:clientId', 
+     tenderController.getAllRunningTender)
   .get('/:id', tenderController.getSingleTender)
+  .patch(
+    '/respond/:id',
+    auth(USER_ROLE.FREELANCER),
+    tenderController.respondTender,
+  )
   .patch(
     '/:id',
     // auth(USER_ROLE.ADMIN),

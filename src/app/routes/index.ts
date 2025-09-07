@@ -26,6 +26,7 @@ import jobsRoutes from '../modules/jobs/jobs.route';
 import tenderRoutes from '../modules/tenders/tenders.route';
 import packageRouter from '../modules/package/package.route';
 import subcriptionRouter from '../modules/subscription/subscription.route';
+import invoicesRouter from '../modules/invoices/invoices.route';
 
 const router = Router();
 
@@ -141,6 +142,10 @@ const moduleRoutes = [
   {
     path: '/report-comments',
     route: reportcommentsRouter,
+  },
+  {
+    path: '/invoice',
+    route: invoicesRouter,
   },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

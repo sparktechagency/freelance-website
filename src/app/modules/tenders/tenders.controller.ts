@@ -90,6 +90,22 @@ const getAllTenderByClient = catchAsync(async (req, res) => {
   });
 });
 
+
+const getAllRunningTender = catchAsync(async (req, res) => {
+  const clientId = req.params.clientId;
+  const result = await createTenderService.getAllRunningTenderQuery(
+    clientId,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    // meta: result.meta,
+    data: result,
+    message: 'Tender All are requered successful!!',
+  });
+});
+
 const getSingleTender = catchAsync(async (req: Request, res: Response) => {
   const result = await createTenderService.getSingleCreateTender(req.params.id);
 
@@ -98,6 +114,18 @@ const getSingleTender = catchAsync(async (req: Request, res: Response) => {
     statusCode: httpStatus.OK,
     data: result,
     message: 'Single Tender get successful',
+  });
+});
+
+const respondTender = catchAsync(async (req: Request, res: Response) => {
+  const { userId } = req.user;
+  const result = await createTenderService.respondTender(req.params.id, userId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Tender respond successful',
   });
 });
 
@@ -159,7 +187,9 @@ export const tenderController = {
   createTender,
   getAllTender,
   getAllTenderByClient,
+  getAllRunningTender,
   getSingleTender,
+  respondTender,
   updateTender,
   deletedTender,
 };

@@ -6,7 +6,7 @@ import { USER_ROLE } from '../user/user.constants';
 const paymentRouter = express.Router();
 
 paymentRouter
-  .post('/add-payment', auth(USER_ROLE.USER), paymentController.addPayment)
+  .post('/add-payment', auth(USER_ROLE.FREELANCER), paymentController.addPayment)
   .get('/success', paymentController.successPage)
   .get('/cancel', paymentController.cancelPaymentPage)
   .get(

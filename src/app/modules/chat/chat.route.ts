@@ -16,41 +16,41 @@ const chatRouter = Router();
 
 chatRouter.post(
   '/',
-  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
+  auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
   chatController.createChat,
 );
 chatRouter.post(
   '/add-participant',
-  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
+  auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
   chatController.addParticipant,
 );
 chatRouter.post(
   '/pin-unpin-message/:chatId',
-  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
+  auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
   chatController.pinUnpinChat,
 );
 
 chatRouter.patch(
   '/:id',
-  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
+  auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
   chatController.updateChat,
 );
 
 chatRouter.delete(
   '/:id',
-  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
+  auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
   chatController.deleteChat,
 );
 
 chatRouter.get(
   '/my-chat-list',
-  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
+  auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
   chatController.getMyChatList,
 );
 
 chatRouter.get(
   '/:id',
-  auth(USER_ROLE.ASSISTANT, USER_ROLE.DOCTOR, USER_ROLE.USER),
+  auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
   chatController.getChatById,
 );
 
