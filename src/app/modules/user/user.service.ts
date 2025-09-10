@@ -18,6 +18,7 @@ import Otp from '../otp/otp.model';
 import { imageUrlGenarate } from '../../utils/imageUrl';
 import { sendEmail } from '../../utils/mailSender';
 import FreelancerInfo from '../freelancerInfo/freelancerInfo.model';
+import Chat from '../chat/chat.model';
 
 export type IFilter = {
   searchTerm?: string;
@@ -214,6 +215,44 @@ console.log('token', token)
 };
 
 
+const freelancerResponse = async ( clientId:string, id:string)=> {
+
+  const user = await User.findById(clientId);
+
+  if(user?.role !== "client"){
+    throw new AppError(httpStatus.BAD_REQUEST, 'You are not a client');
+  
+  }
+
+  const freelancer = await User.findById(id);
+
+  if(freelancer?.role !== "freelancer"){
+    throw new AppError(httpStatus.BAD_REQUEST, 'Freelancer not found');
+  }
+
+  const isExist = await Chat.findOne({
+    participants: { $all: [user._id, freelancer._id] },
+  });
+
+  if (isExist) {
+    return isExist;
+    // throw new AppError(httpStatus.BAD_REQUEST, 'Chat already exists');
+  }else{
+    const response = await Chat.create({
+      participants: [user._id, freelancer._id],
+    });
+
+    if (!response) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Respnse not valid!');
+    }
+
+    return response;
+  }
+
+  
+};
+
+
 
 
 const creatorUserService = async (
@@ -378,6 +417,7 @@ const updateUser = async (id: string, payload: Partial<TUser>) => {
 // ............................rest
 
 const getAllUserQuery = async (query: Record<string, unknown>) => {
+  
   const userQuery = new QueryBuilder(User.find({}), query)
     .search(['email', 'fullName'])
     .filter()
@@ -455,6 +495,13 @@ const getUserById = async (id: string) => {
   }
   return result;
 };
+
+const getAllFreelancers = async () => {
+  const result = await User.find({ role: 'freelancer' }).populate('freelancerId');
+  return result;
+  
+};
+
 
 const getUserByEmail = async (email: string) => {
   const result = await User.findOne({ email, isDeleted: false });
@@ -539,9 +586,11 @@ const blockedUser = async (id: string, userId: string) => {
 export const userService = {
   createUserToken,
   otpVerifyAndCreateUser,
+  freelancerResponse,
   creatorUserService,
   // userSwichRoleService,
   getUserById,
+  getAllFreelancers,
   getUserByEmail,
   updateUser,
   deleteMyAccount,

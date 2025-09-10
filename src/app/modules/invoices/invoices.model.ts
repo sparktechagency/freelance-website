@@ -37,15 +37,23 @@ const invoiceSchema = new Schema({
   },
   status: {
     type: String,
-    enum:['pending','accepted','delivered','declined','completed'],
+    enum: ['pending', 'accepted', 'delivered', 'declined', 'completed'],
     required: true,
-    default:'pending'
+    default: 'pending',
   },
   paymentStatus: {
     type: String,
-    enum:['pending','paid'],
+    enum: ['pending', 'paid'],
     required: true,
-    default:'pending'
+    default: 'pending',
+  },
+  deliveryMessage: {
+    type: String,
+    required: false,
+  },
+  deliveryFiles: {
+    type: [String],
+    required: false,
   },
 });
 

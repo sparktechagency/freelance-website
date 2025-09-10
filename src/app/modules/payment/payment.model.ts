@@ -32,12 +32,28 @@ const paymentSchema = new Schema<TPayment>(
     subcriptionId: {
       type: Schema.Types.ObjectId,
       ref: 'Subcription',
-      required: true,
+      required: false,
+    },
+    invoiceId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Invoice',
+      required: false,
     },
     isRefund: {
       type: Boolean,
       required: true,
       default: false,
+    },
+    transferAmount: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    paymentType: {
+      type: String,
+      enum: ['subscription', 'invoice'],
+      required: true,
+      default: 'subscription',
     },
   },
   { timestamps: true },

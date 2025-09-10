@@ -34,6 +34,20 @@ const getAllInvoiceByClient = catchAsync(async (req, res) => {
   });
 });
 
+const getAllInvoices = catchAsync(async (req, res) => {
+  const { meta, result } = await invoiceService.getAllInvoices(
+    req.query
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    meta: meta,
+    data: result,
+    message: 'All Invoice are requered successful!!',
+  });
+});
+
 
 const getAllInvoiceByFreelancer = catchAsync(async (req, res) => {
   const { userId } = req.user;
@@ -93,6 +107,47 @@ const invoiceApprove = catchAsync(async (req, res) => {
   });
 });
 
+
+const invoiceDelivery = catchAsync(async (req, res) => {
+  const { userId } = req.user;
+  const { id } = req.params;
+  const payload = req.body;
+  payload.freelancerUserId = userId;
+
+  const files = req.files as {
+    [fieldname: string]: Express.Multer.File[];
+  };
+
+  if(!payload.deliveryMessage){
+    throw new Error('Delivery Message is required');
+    
+  }
+
+  const result = await invoiceService.invoiceDelivery(id, payload, files);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Invoice Delivery are successful!!',
+  });
+});
+
+
+const invoiceComplete = catchAsync(async (req, res) => {
+  const { userId } = req.user;
+  const { id } = req.params;
+
+  const result = await invoiceService.invoiceComplete(userId, id);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Invoice Complete are successful!!',
+  });
+});
+
 const deleteSingleInvoice = catchAsync(async (req, res) => {
   const result = await invoiceService.deletedInvoiceQuery(req.params.id);
 
@@ -107,8 +162,11 @@ const deleteSingleInvoice = catchAsync(async (req, res) => {
 export const invoiceController = {
   createInvoice,
   getAllInvoiceByClient,
+  getAllInvoices,
   getAllInvoiceByFreelancer,
   invoiceApprove,
+  invoiceDelivery,
+  invoiceComplete,
   getSingleInvoice,
   updateSingleInvoice,
   deleteSingleInvoice,

@@ -10,5 +10,7 @@ export type TInvoices = {
   date: Date;
   status: string;
   paymentStatus: string;
+  deliveryMessage: string;
+  deliveryFiles: string[];
   
 };

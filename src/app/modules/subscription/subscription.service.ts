@@ -10,6 +10,7 @@ import Package from '../package/package.model';
 import { calculateEndDate } from './subcription.utils';
 import mongoose from 'mongoose';
 import { Payment } from '../payment/payment.model';
+import { paymentService } from '../payment/payment.service';
 
 
 const createSubscription = async (payload: any, session?: any) => {
@@ -29,6 +30,7 @@ const createSubscription = async (payload: any, session?: any) => {
     const existingPackage = await Package.findById(payload.packageId).session(
       createdSession,
     );
+    console.log('existingPackage==', existingPackage);
     if (!existingPackage) {
       throw new AppError(404, 'This Service is not found!');
     }
@@ -58,6 +60,7 @@ const createSubscription = async (payload: any, session?: any) => {
           packageId:existingPackage._id,
           endDate: { $gt: new Date() },
           $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
+          status: "running",
           isDeleted: false,
         }).session(createdSession);
 
@@ -75,6 +78,7 @@ const createSubscription = async (payload: any, session?: any) => {
           title: existingPackage.title,
           packageId: existingPackage._id,
           endDate: { $gt: new Date() },
+          status: 'running',
           isDeleted: false,
         }).session(createdSession);
         console.log('existingSubscription==', existingSubscription);
@@ -91,6 +95,7 @@ const createSubscription = async (payload: any, session?: any) => {
         type: existingPackage.type,
         title: existingPackage.title,
         packageId: existingPackage._id,
+        status: ['running', 'completed'],
         isDeleted: false,
       }).session(createdSession);
 
@@ -113,15 +118,13 @@ const createSubscription = async (payload: any, session?: any) => {
     const result = await Subscription.create([payload], { session:createdSession });
     console.log('result==', result);
 
-  //   const paymentData = {
-  //     userId: user._id,
-  //     method: 'paypal',
-  //     amount: existingPackage.price,
-  //     status: 'paid',
-  //     transactionId: payload.transactionId,
-  //     transactionDate: new Date(),
-  //     subscriptionId: result[0]._id,
-  //   };
+    const paymentData = {
+      amount: existingPackage.price,
+      subscriptionId: result[0]._id,
+    };
+    
+
+    const url = await paymentService.createCheckout(user._id, paymentData);
 
   //  const payment = await Payment.create([paymentData], { session });
 
@@ -131,7 +134,7 @@ const createSubscription = async (payload: any, session?: any) => {
 
     await createdSession.commitTransaction();
 
-    return result[0];
+    return url;
   } catch (error) {
     if (createdSession.inTransaction()) {
       await createdSession.abortTransaction();

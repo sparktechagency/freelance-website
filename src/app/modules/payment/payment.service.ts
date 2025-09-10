@@ -17,7 +17,9 @@ import axios from 'axios';
 import paypalClient from '../../utils/paypal';
 import paypal from '@paypal/checkout-server-sdk';
 import * as paypalPayouts from '@paypal/payouts-sdk';
-
+import Subscription from '../subscription/subscription.model';
+import Invoice from '../invoices/invoices.model';
+import { Tender } from '../tenders/tenders.model';
 
 type SessionData = Stripe.Checkout.Session;
 
@@ -36,24 +38,22 @@ const addPaymentService = async (payload: any) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
-
   try {
     const user = await User.findById(payload.userId).session(session);
     if (!user) {
       throw new AppError(httpStatus.BAD_REQUEST, 'User not found');
     }
-  
 
     const paymentData = {
       userId: user._id,
       method: payload.method,
-       status: 'paid',
-       transactionId: payload.transactionId,
-       transactionDate: new Date(),
-    }
+      status: 'paid',
+      transactionId: payload.transactionId,
+      transactionDate: new Date(),
+    };
 
     const payment = await Payment.create([paymentData], { session });
-  
+
     await session.commitTransaction();
     session.endSession();
     return payment;
@@ -64,8 +64,6 @@ const addPaymentService = async (payload: any) => {
     throw error;
   }
 };
-
-
 
 // const checkPayoutStatus = async (batchId: string) => {
 //   try {
@@ -108,11 +106,9 @@ const addPaymentService = async (payload: any) => {
 //   }
 // };
 
-
-
 const getAllPaymentService = async (query: Record<string, unknown>) => {
   const PaymentQuery = new QueryBuilder(
-    Payment.find({}).populate('userId').populate('orderId'),
+    Payment.find({}).populate({path:'userId', select: 'fullName profile email role'}),
     query,
   )
     .search([''])
@@ -126,10 +122,7 @@ const getAllPaymentService = async (query: Record<string, unknown>) => {
   return { meta, result };
 };
 
-
- const getAllPaymentServiceReveniew = async (
-  query: Record<string, unknown>,
-) => {
+const getAllPaymentServiceReveniew = async (query: Record<string, unknown>) => {
   const page = query.page || 1;
   const limit = query.limit || 10;
   const year = query.year;
@@ -143,23 +136,20 @@ const getAllPaymentService = async (query: Record<string, unknown>) => {
     },
   );
 
+  // console.log('response.data', response?.data?.data);
+  // console.log('year', year);
+  //   if (year) {
+  //     const filteredData = response?.data?.data?.filter((transaction: any) => {
+  //       const transactionDate = new Date(transaction?.date);
+  //       return transactionDate.getFullYear() === year;
+  //     });
 
-// console.log('response.data', response?.data?.data);
-// console.log('year', year);
-//   if (year) {
-//     const filteredData = response?.data?.data?.filter((transaction: any) => {
-//       const transactionDate = new Date(transaction?.date);
-//       return transactionDate.getFullYear() === year;
-//     });
+  //     console.log('filteredData', filteredData);
 
-//     console.log('filteredData', filteredData);
+  //     return {meta:response?.data?.meta, result:filteredData} ;
+  //   }
 
-//     return {meta:response?.data?.meta, result:filteredData} ;
-//   }
-
-
-
-  return {meta:response?.data?.meta, result:response?.data?.data};
+  return { meta: response?.data?.meta, result: response?.data?.data };
 };
 
 const getAllPaymentByCustomerService = async (
@@ -243,14 +233,19 @@ const getAllIncomeRatio = async (year: number) => {
   return months;
 };
 
-
 const getAllOverview = async () => {
-
-  const totalCreator = await User.countDocuments({ role: 'creator' });
-  const totalBrand = await User.countDocuments({ role: 'user' });
-  const totalRevenue = await Payment.aggregate([
+  const totalFreelancer = await User.countDocuments({ role: 'freelancer' });
+  const totalClient = await User.countDocuments({ role: 'client' });
+  const totalAcceptProject = await Invoice.countDocuments({
+    status: 'accepted',
+  });
+  const totalUsers = await User.countDocuments({});
+  const totalDeliveryProject = await User.countDocuments({
+    status: 'completed',
+  });
+  const totalRevenueFromSubscription = await Payment.aggregate([
     {
-      $match: { status: 'paid', isRefund:false },
+      $match: { status: 'paid', paymentType: 'subscription' },
     },
     {
       $group: {
@@ -265,16 +260,150 @@ const getAllOverview = async () => {
       },
     },
   ]);
- 
 
+
+  const totalRevenueFromProject = await Payment.aggregate([
+    {
+      $match: { 
+        status: 'paid', 
+        paymentType: 'invoice'
+       },
+    },
+    {
+      $project: {
+        amount: 1,
+        revenue: { $multiply: ['$amount', 0.05] }, 
+      },
+    },
+    {
+      $group: {
+        _id: null, 
+        totalRevenue: { $sum: '$revenue' },
+      },
+    },
+  ]);
+
+  const totalRevenue =
+    totalRevenueFromSubscription[0]?.totalIncome +
+    totalRevenueFromProject[0]?.totalRevenue;
+
+
+    const totalRevenueLast7DaysForInvoice = await Payment.aggregate([
+      {
+        $match: {
+          status: 'paid',
+          paymentType: 'invoice',
+          transactionDate: {
+            $gte: new Date(new Date().setDate(new Date().getDate() - 7)), // Filter for last 7 days
+          },
+        },
+      },
+      {
+        $project: {
+          amount: 1,
+          revenue: { $multiply: ['$amount', 0.05] },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: '$revenue' },
+        },
+      },
+    ]);
+
+    const totalRevenueLast7DaysForSubscription = await Payment.aggregate([
+      {
+        $match: {
+          status: 'paid',
+          paymentType: 'subscription',
+          transactionDate: {
+            $gte: new Date(new Date().setDate(new Date().getDate() - 7)), // Filter for last 7 days
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalIncome: { $sum: '$amount' },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          totalIncome: 1,
+        },
+      },
+    ]);
+
+    const last7DaysEarning =
+      totalRevenueLast7DaysForInvoice[0]?.totalRevenue +
+      totalRevenueLast7DaysForSubscription[0]?.totalIncome;
+
+
+    const dailyDeliveriesLast7Days = await Invoice.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(new Date().setDate(new Date().getDate() - 7)), 
+          },
+          status: 'completed',
+        },
+      },
+      {
+        $project: {
+          date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+        },
+      },
+      {
+        $group: {
+          _id: '$date', 
+          totalDeliveries: { $sum: 1 },
+        },
+      },
+      {
+        $sort: { _id: 1 },
+      },
+    ]);
 
   
+    const last7DaysDeliveries = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateString = date.toISOString().split('T')[0];
+
+      const existingDay = dailyDeliveriesLast7Days.find(
+        (item) => item._id === dateString,
+      );
+      last7DaysDeliveries.push({
+        dateHour: dateString,
+        totalDeliveries: existingDay ? existingDay.totalDeliveries : 0,
+      });
+    }
+
+    console.log(last7DaysDeliveries);
+
+
+    const totalActiveProjects = await Invoice.find({ status: 'accepted' });
+
+
+     
+
   return {
-    totalCreator,
-    totalBrand,
-    totalRevenue: totalRevenue.length > 0 ? totalRevenue[0].totalIncome : 0
+    totalUsers,
+    totalFreelancer,
+    totalClient,
+    totalAcceptProject,
+    totalDeliveryProject,
+    totalRevenue,
+    last7DaysEarning,
+    last7DaysTotalDeliveryAcceptProject: last7DaysDeliveries,
+    totalActiveProjects,
   };
 };
+
 
 // const getAllIncomeRatiobyDays = async (days: string) => {
 //   const currentDay = new Date();
@@ -287,7 +416,6 @@ const getAllOverview = async () => {
 //   } else {
 //     throw new Error("Invalid value for 'days'. Use '7day' or '24hour'.");
 //   }
-
 
 //   const timeSlots =
 //     days === '7day'
@@ -552,244 +680,322 @@ const getAllSubscriptionUsersByWeekly = async (days: string) => {
   return timeSlots;
 };
 
+const getFreelancerClientsCountryRegion = async () => {
+  const result = await User.aggregate([
+    {
+      $facet: {
+        freelancers: [
+          {
+            $match: { role: 'freelancer' },
+          },
+          {
+            $group: {
+              _id: '$location',
+              freelancerCount: { $sum: 1 },
+            },
+          },
+          {
+            $project: {
+              country: '$_id',
+              freelancerCount: 1,
+              _id: 0,
+            },
+          },
+        ],
+        clients: [
+          {
+            $match: { role: 'client' },
+          },
+          {
+            $group: {
+              _id: '$location',
+              clientCount: { $sum: 1 },
+            },
+          },
+          {
+            $project: {
+              country: '$_id',
+              clientCount: 1,
+              _id: 0,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $project: {
+        freelancers: 1,
+        clients: 1,
+      },
+    },
+  ]);
 
+  
+  const combinedResult = {
+    freelancers: result[0].freelancers,
+    clients: result[0].clients,
+  };
+
+  return combinedResult;
+};
 
 
 const createCheckout = async (userId: any, payload: any) => {
-  // console.log('stripe payment', payload);
-  // let session = {} as { id: string };
-  //  const isExistPackage = await Package.findOne({
-  //    _id: payload.packageId
-  //  });
-  //  if (!isExistPackage) {
-  //    throw new AppError(404, 'Package not found');
-  //  }
+  console.log('stripe payment', payload);
+  let session = {} as { id: string };
 
-  //  const userAllready7DaysFreeTrial = await User.findById(userId);
+  const metaData: any = {
+    userId: String(userId),
+  };
+  if (payload.subscriptionId)
+    metaData.subscriptionId = String(payload.subscriptionId);
+  if (payload.invoiceId) metaData.invoiceId = String(payload.invoiceId);
 
-  //  if (!userAllready7DaysFreeTrial) {
-  //   throw new AppError(404, 'User not found!!');
-  //  }
+  const lineItems = [
+    {
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: 'Amount',
+        },
+        unit_amount: Math.round(payload.amount * 100),
+      },
+      quantity: 1,
+    },
+  ];
 
+  const sessionData: any = {
+    payment_method_types: ['card'],
+    mode: 'payment',
+    success_url: config.stripe.stripe_payment_success_url,
+    cancel_url: config.stripe.stripe_payment_cancel_url,
+    line_items: lineItems,
+    // subscription_data: {
+    //   metadata: {
+    //     userId: String(userId),
+    //     packageId: String(isExistPackage._id),
+    //   },
+    // },
+    metadata: metaData,
+  };
 
-  // // console.log('lineItems=', lineItems);
+  console.log('sessionData=', sessionData);
+  console.log('metaData=', metaData);
 
-  // let sessionData:any;
+  try {
+    console.log('try session');
+    session = await stripe.checkout.sessions.create(sessionData);
+  } catch (error) {
+    console.log('Error', error);
+  }
 
-  // if (userAllready7DaysFreeTrial.isFreeTrial) {
-  //    sessionData = {
-  //     payment_method_types: ['card'],
-  //     mode: 'subscription',
-  //     success_url: config.stripe.stripe_payment_success_url,
-  //     cancel_url: config.stripe.stripe_payment_cancel_url,
-  //     line_items: [
-  //       {
-  //         price: String(isExistPackage.priceId),
-  //         quantity: 1,
-  //       },
-  //     ],
-  //     subscription_data: {
-  //       metadata: {
-  //         userId: String(userId),
-  //         packageId: String(isExistPackage._id),
-  //       },
-  //     },
-  //     metadata: {
-  //       userId: String(userId),
-  //       packageId: String(payload.packageId),
-  //     },
-  //   };
+  console.log('try session 22');
+  const { id: session_id, url }: any = session || {};
 
-  // }else{
-  //    sessionData = {
-  //     payment_method_types: ['card'],
-  //     mode: 'subscription',
-  //     success_url: config.stripe.stripe_payment_success_url,
-  //     cancel_url: config.stripe.stripe_payment_cancel_url,
-  //     line_items: [
-  //       {
-  //         price: String(isExistPackage.priceId),
-  //         quantity: 1,
-  //       },
-  //     ],
-  //     subscription_data: {
-  //       trial_period_days: 7,
-  //       metadata: {
-  //         userId: String(userId),
-  //         packageId: String(isExistPackage._id),
-  //       },
-  //     },
-  //     metadata: {
-  //       userId: String(userId),
-  //       packageId: String(payload.packageId),
-  //     },
-  //   };
+  console.log({ url });
 
-  // }
-
-  
-
-  // console.log('sessionData=', sessionData);
-
-  // try {
-  //   console.log('try session');
-  //   session = await stripe.checkout.sessions.create(sessionData);
-  //   console.log('session==', session);
-
-  // } catch (error) {
-  //   console.log('Error', error);
-  // }
-
-  // console.log('try session 22');
-  // const { id: session_id, url }: any = session || {};
-
-  // console.log({ url });
-
-  // return { url };
+  return { url };
 };
 
 const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
-  // try {
-  //   switch (event.type) {
-  //     case 'checkout.session.completed': {
-  //       console.log(
-  //         'hit hise webhook controller servie checkout.session.completed',
-  //       );
-  //       const sessionData = event.data.object as Stripe.Checkout.Session;
-  //       const {
-  //         id: sessionId,
-  //         payment_intent: paymentIntentId,
-  //         metadata,
-  //       }: SessionData = sessionData;
-  //       console.log('metadata==', metadata);
-  //       const subcriptionId = metadata?.subcriptionId as string;
-  //       const userId = metadata?.userId as string;
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        console.log(
+          'hit hise webhook controller servie checkout.session.completed',
+        );
+        const sessionData = event.data.object as Stripe.Checkout.Session;
+        const {
+          id: sessionId,
+          payment_intent: paymentIntentId,
+          metadata,
+        }: SessionData = sessionData;
+        console.log('metadata==', metadata);
+        const subcriptionId = metadata?.subscriptionId as string;
+        const invoiceId = metadata?.invoiceId as string;
+        const userId = metadata?.userId as string;
 
-  //       if (!paymentIntentId) {
-  //         throw new AppError(
-  //           httpStatus.BAD_REQUEST,
-  //           'Payment Intent ID not found in session',
-  //         );
-  //       }
+        if (!paymentIntentId) {
+          throw new AppError(
+            httpStatus.BAD_REQUEST,
+            'Payment Intent ID not found in session',
+          );
+        }
 
-  //       const paymentIntent = await stripe.paymentIntents.retrieve(
-  //         paymentIntentId as string,
-  //       );
+        const paymentIntent = await stripe.paymentIntents.retrieve(
+          paymentIntentId as string,
+        );
 
-  //       if (!paymentIntent || paymentIntent.amount_received === 0) {
-  //         throw new AppError(httpStatus.BAD_REQUEST, 'Payment Not Successful');
-  //       }
+        if (!paymentIntent || paymentIntent.amount_received === 0) {
+          throw new AppError(httpStatus.BAD_REQUEST, 'Payment Not Successful');
+        }
 
-  //       console.log('===subcriptionId', subcriptionId);
+        console.log('===subcriptionId', subcriptionId);
 
-  //       const subscription = await Subscription.findByIdAndUpdate(
-  //         subcriptionId,
-  //         { status: 'running' },
-  //         { new: true, session },
-  //       );
+        if (subcriptionId) {
+          const subscription = await Subscription.findById(subcriptionId);
+          console.log('===subscription', subscription);
+          const subscriptionUpdated = await Subscription.findByIdAndUpdate(
+            subcriptionId,
+            { status: 'running' },
+            { new: true, session },
+          );
+          if (!subscriptionUpdated) {
+            console.log('===subscriptionUpdated', subscriptionUpdated);
+          }
 
-  //       console.log('===subscription', subscription);
+          const paymentData: any = {
+            userId: userId,
+            amount: subscription?.price,
+            method: 'stripe',
+            transactionId: paymentIntentId,
+            subcriptionId: subscription?._id,
+            status: 'paid',
+            sessionId: sessionId,
+            paymentType: 'subscription',
+            // transactionDate: subscription?.createdAt,
+          };
 
-  //       if (!subscription) {
-  //         throw new AppError(httpStatus.BAD_REQUEST, 'subscription not found');
-  //       }
+          const payment = await Payment.create([paymentData], { session });
+          console.log('===payment', payment);
+          if (payment.length === 0) {
+            console.log('===payment.length', payment);
+          }
 
-  //       console.log('===subscription', subscription);
+          await Subscription.deleteMany(
+            { userId, status: 'pending' },
+            { session },
+          );
+        } else {
+         
+          const invoice: any = await Invoice.findById(invoiceId);
+          console.log('===invoice', invoice);
+          const invoiceUpdated = await Invoice.findByIdAndUpdate(
+            invoiceId,
+            { status: 'accepted' },
+            { new: true, session },
+          );
+          if (!invoiceUpdated) {
+            console.log('===invoiceUpdated', invoiceUpdated);
+          }
 
-  //       const paymentData: any = {
-  //         userId: userId,
-  //         amount: subscription?.price,
-  //         method: 'stripe',
-  //         transactionId: paymentIntentId,
-  //         subcriptionId: subscription?._id,
-  //         status: 'paid',
-  //         sessionId: sessionId,
-  //         // transactionDate: subscription?.createdAt,
-  //       };
+          const mainTender:any = await Tender.findById(invoice.tenderId).session(
+            session,
+          );
+          if (!mainTender) {
+           console.log('tender not found!!');
+          }
 
-  //       const payment = await Payment.create([paymentData], { session });
-  //       console.log('===payment', payment);
-  //       if (payment.length === 0) {
-  //         throw new AppError(
-  //           httpStatus.BAD_REQUEST,
-  //           'Payment record creation failed',
-  //         );
-  //       }
+          const updateTender = await Tender.findByIdAndUpdate(
+            mainTender._id,
+            { status: 'running' },
+            { new: true, session },
+          );
 
-  //       const user = await User.findById(userId);
-  //       if (!user) {
-  //         throw new AppError(httpStatus.BAD_REQUEST, 'User not found');
-  //       }
+          if (!updateTender) {
+            // throw new AppError(403, 'Tender update failed!');
+            console.log('Tender update failed');
+          }
+          // 5% of amount minuse main amount
+          const fee = (5 * invoice?.amount) / 100;
+          const totalAmount = invoice?.amount - fee;
 
-  //       const notificationData = {
-  //         userId: userId,
-  //         message: 'Subscription create successfull!!',
-  //         type: 'success',
-  //       };
+          const paymentData: any = {
+            userId: userId,
+            amount: invoice?.amount,
+            method: 'stripe',
+            transactionId: paymentIntentId,
+            invoiceId: invoice?._id,
+            status: 'paid',
+            sessionId: sessionId,
+            paymentType: 'invoice',
+            transferAmount: totalAmount,
+            // transactionDate: subscription?.createdAt,
+          };
 
-  //       const notificationData1 = {
-  //         role: 'admin',
-  //         message: 'New Booking create successfull!!',
-  //         type: 'success',
-  //       };
+          const payment = await Payment.create([paymentData], { session });
+          console.log('===payment', payment);
+          if (payment.length === 0) {
+            console.log('===payment', payment);
+          }
 
-  //       const [notification, notification1] = await Promise.all([
-  //         notificationService.createNotification(notificationData),
-  //         notificationService.createNotification(notificationData1),
-  //       ]);
+          if (invoice?.tenderId) {
+            const deleteOtherInvoice = await Invoice.updateMany(
+              { tenderId: invoice?.tenderId, status: 'pending' },
+              { status: 'declined' },
+              { session },
+            );
+          }
+        }
 
-  //       if (!notification || !notification1) {
-  //         throw new AppError(404, 'Notification create faild!!');
-  //       }
+        const user = await User.findById(userId);
+        if (!user) {
+          throw new AppError(httpStatus.BAD_REQUEST, 'User not found');
+        }
 
-  //       await Subscription.deleteMany(
-  //         { userId, status: 'pending' },
-  //         { session },
-  //       );
+        const notificationData = {
+          userId: userId,
+          message: 'Subscription create successfull!!',
+          type: 'success',
+        };
 
-  //       await session.commitTransaction();
-  //       console.log('Payment completed successfully:', {
-  //         sessionId,
-  //         paymentIntentId,
-  //       });
+        const notificationData1 = {
+          role: 'admin',
+          message: 'New Booking create successfull!!',
+          type: 'success',
+        };
 
-  //       break;
-  //     }
+        const [notification, notification1] = await Promise.all([
+          notificationService.createNotification(notificationData),
+          notificationService.createNotification(notificationData1),
+        ]);
 
-  //     case 'checkout.session.async_payment_failed': {
-  //       const sessionData = event.data.object as Stripe.Checkout.Session;
-  //       const {
-  //         id: sessionId,
-  //         payment_intent: paymentIntentId,
-  //         metadata,
-  //       }: SessionData = sessionData;
-  //       const subcriptionId = metadata?.subcriptionId as string;
-  //       const userId = metadata?.userId as string;
+        if (!notification || !notification1) {
+          throw new AppError(404, 'Notification create faild!!');
+        }
 
+        await session.commitTransaction();
+        console.log('Payment completed successfully:', {
+          sessionId,
+          paymentIntentId,
+        });
 
-  //      await Subscription.deleteMany(
-  //        { userId, status: 'pending' },
-  //        { session },
-  //      );
+        break;
+      }
 
-  //      await session.commitTransaction();
-  //       break;
-  //     }
+      case 'checkout.session.async_payment_failed': {
+        const sessionData = event.data.object as Stripe.Checkout.Session;
+        const {
+          id: sessionId,
+          payment_intent: paymentIntentId,
+          metadata,
+        }: SessionData = sessionData;
+        const subcriptionId = metadata?.subcriptionId as string;
+        const userId = metadata?.userId as string;
 
-  //     default:
-  //       // // console.log(`Unhandled event type: ${event.type}`);
-  //       // res.status(400).send();
-  //       return;
-  //   }
-  // } catch (err) {
-  //   await session.abortTransaction();
-  //   console.error('Error processing webhook event:', err);
-  // } finally {
-  //   session.endSession();
-  // }
+        await Subscription.deleteMany(
+          { userId, status: 'pending' },
+          { session },
+        );
+
+        await session.commitTransaction();
+        break;
+      }
+
+      default:
+        // // console.log(`Unhandled event type: ${event.type}`);
+        // res.status(400).send();
+        return;
+    }
+  } catch (err) {
+    await session.abortTransaction();
+    console.error('Error processing webhook event:', err);
+  } finally {
+    session.endSession();
+  }
 };
 
 // const paymentRefundService = async (
@@ -812,7 +1018,54 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
 //   return result;
 // };
 
-const getAllEarningRatio = async (year: number, businessId: string) => {
+// const getAllEarningRatio = async (year: number) => {
+//   const startOfYear = new Date(year, 0, 1);
+//   const endOfYear = new Date(year + 1, 0, 1);
+
+//   const months = Array.from({ length: 12 }, (_, i) => ({
+//     month: i + 1,
+//     totalIncome: 0,
+//   }));
+
+//   // console.log({ months });
+
+//   const incomeData = await Payment.aggregate([
+//     {
+//       $match: {
+//         status: 'paid',
+//         transactionDate: { $gte: startOfYear, $lt: endOfYear },
+//       },
+//     },
+//     {
+//       $group: {
+//         _id: { month: { $month: '$transactionDate' } },
+//         totalIncome: { $sum: '$amount' },
+//       },
+//     },
+//     {
+//       $project: {
+//         month: '$_id.month',
+//         totalIncome: 1,
+//         _id: 0,
+//       },
+//     },
+//     {
+//       $sort: { month: 1 },
+//     },
+//   ]);
+
+//   incomeData.forEach((data) => {
+//     const monthData = months.find((m) => m.month === data.month);
+//     if (monthData) {
+//       monthData.totalIncome = data.totalIncome;
+//     }
+//   });
+
+//   return months;
+// };
+
+
+const getAllEarningRatio = async (year: number) => {
   const startOfYear = new Date(year, 0, 1);
   const endOfYear = new Date(year + 1, 0, 1);
 
@@ -821,19 +1074,35 @@ const getAllEarningRatio = async (year: number, businessId: string) => {
     totalIncome: 0,
   }));
 
-  // console.log({ months });
-
   const incomeData = await Payment.aggregate([
     {
       $match: {
-        status: 'complete',
+        status: 'paid',
         transactionDate: { $gte: startOfYear, $lt: endOfYear },
       },
     },
     {
+      $project: {
+        month: { $month: '$transactionDate' },
+        amount: 1,
+        paymentType: 1, 
+      },
+    },
+    {
+      $addFields: {
+        revenue: {
+          $cond: {
+            if: { $eq: ['$paymentType', 'invoice'] }, 
+            then: { $multiply: ['$amount', 0.05] }, 
+            else: '$amount',
+          },
+        },
+      },
+    },
+    {
       $group: {
-        _id: { month: { $month: '$transactionDate' } },
-        totalIncome: { $sum: '$amount' },
+        _id: { month: '$month' },
+        totalIncome: { $sum: '$revenue' },
       },
     },
     {
@@ -858,122 +1127,126 @@ const getAllEarningRatio = async (year: number, businessId: string) => {
   return months;
 };
 
-// const refreshAccountConnect = async (
-//   id: string,
-//   host: string,
-//   protocol: string,
-// ): Promise<string> => {
-//   const onboardingLink = await stripe.accountLinks.create({
-//     account: id,
-//     refresh_url: `${protocol}://${host}/api/v1/payment/refreshAccountConnect/${id}`,
-//     return_url: `${protocol}://${host}/api/v1/payment/success-account/${id}`,
-//     type: 'account_onboarding',
-//   });
-//   return onboardingLink.url;
-// };
 
-// const createStripeAccount = async (
-//   user: any,
-//   host: string,
-//   protocol: string,
-// ): Promise<any> => {
-//   // console.log('user',user);
-//   const existingAccount = await StripeAccount.findOne({
-//     userId: user.userId,
-//   }).select('user accountId isCompleted');
-//   // console.log('existingAccount', existingAccount);
+const refreshAccountConnect = async (
+  id: string,
+  host: string,
+  protocol: string,
+): Promise<string> => {
+  const onboardingLink = await stripe.accountLinks.create({
+    account: id,
+    refresh_url: `${protocol}://${host}/api/v1/payment/refreshAccountConnect/${id}`,
+    return_url: `${protocol}://${host}/api/v1/payment/success-account/${id}`,
+    type: 'account_onboarding',
+  });
+  return onboardingLink.url;
+};
 
-//   if (existingAccount) {
-//     if (existingAccount.isCompleted) {
-//       return {
-//         success: false,
-//         message: 'Account already exists',
-//         data: existingAccount,
-//       };
-//     }
+const createStripeAccount = async (
+  user: any,
+  host: string,
+  protocol: string,
+): Promise<any> => {
+  // console.log('user',user);
+  const existingAccount = await StripeAccount.findOne({
+    userId: user.userId,
+  }).select('user accountId isCompleted');
+  // console.log('existingAccount', existingAccount);
 
-//     const onboardingLink = await stripe.accountLinks.create({
-//       account: existingAccount.accountId,
-//       refresh_url: `${protocol}://${host}/api/v1/payment/refreshAccountConnect/${existingAccount.accountId}`,
-//       return_url: `${protocol}://${host}/api/v1/payment/success-account/${existingAccount.accountId}`,
-//       type: 'account_onboarding',
-//     });
-//     // console.log('onboardingLink-1', onboardingLink);
+  if (existingAccount) {
+    if (existingAccount.isCompleted) {
+      return {
+        success: false,
+        message: 'Account already exists',
+        data: existingAccount,
+      };
+    }
 
-//     return {
-//       success: true,
-//       message: 'Please complete your account',
-//       url: onboardingLink.url,
-//     };
-//   }
+    const onboardingLink = await stripe.accountLinks.create({
+      account: existingAccount.accountId,
+      refresh_url: `${protocol}://${host}/api/v1/payment/refreshAccountConnect/${existingAccount.accountId}`,
+      return_url: `${protocol}://${host}/api/v1/payment/success-account/${existingAccount.accountId}`,
+      type: 'account_onboarding',
+    });
+    // console.log('onboardingLink-1', onboardingLink);
 
-//   const account = await stripe.accounts.create({
-//     type: 'express',
-//     email: user.email,
-//     country: 'US',
-//     capabilities: {
-//       card_payments: { requested: true },
-//       transfers: { requested: true },
-//     },
-//   });
-//   // console.log('stripe account', account);
+    return {
+      success: true,
+      message: 'Please complete your account',
+      url: onboardingLink.url,
+    };
+  }
 
-//   await StripeAccount.create({ accountId: account.id, userId: user.userId });
+  const account = await stripe.accounts.create({
+    type: 'express',
+    email: user.email,
+    country: 'US',
+    capabilities: {
+      card_payments: { requested: true },
+      transfers: { requested: true },
+    },
+  });
+  // console.log('stripe account', account);
 
-//   const onboardingLink = await stripe.accountLinks.create({
-//     account: account.id,
-//     refresh_url: `${protocol}://${host}/api/v1/payment/refreshAccountConnect/${account.id}`,
-//     return_url: `${protocol}://${host}/api/v1/payment/success-account/${account.id}`,
-//     type: 'account_onboarding',
-//   });
-//   // console.log('onboardingLink-2', onboardingLink);
+  await StripeAccount.create({ accountId: account.id, userId: user.userId });
 
-//   return {
-//     success: true,
-//     message: 'Please complete your account',
-//     url: onboardingLink.url,
-//   };
-// };
+  const onboardingLink = await stripe.accountLinks.create({
+    account: account.id,
+    refresh_url: `${protocol}://${host}/api/v1/payment/refreshAccountConnect/${account.id}`,
+    return_url: `${protocol}://${host}/api/v1/payment/success-account/${account.id}`,
+    type: 'account_onboarding',
+  });
+  // console.log('onboardingLink-2', onboardingLink);
 
-// const transferBalanceService = async (
-//   accountId: string,
-//   amt: number,
-//   userId: string,
-// ) => {
-//   const withdreawAmount = await availablewithdrawAmount('stripe', userId);
-//   // console.log('withdreawAmount===', withdreawAmount[0].totalAmount);
+  return {
+    success: true,
+    message: 'Please complete your account',
+    url: onboardingLink.url,
+  };
+};
 
-//   if (withdreawAmount[0].totalAmount < 0) {
-//     throw new AppError(httpStatus.BAD_REQUEST, 'Amount must be positive');
-//   }
-//   const amount = withdreawAmount[0].totalAmount * 100;
-//   const transfer = await stripe.transfers.create({
-//     amount,
-//     currency: 'usd',
-//     destination: accountId,
-//   });
-//   // console.log('transfer', transfer);
-//   if (!transfer) {
-//     throw new AppError(httpStatus.BAD_REQUEST, 'Transfer failed');
-//   }
-//   let withdraw;
-//   if (transfer) {
-//     const withdrawData: any = {
-//       transactionId: transfer.id,
-//       amount: withdreawAmount[0].totalAmount,
-//       method: 'stripe',
-//       status: 'completed',
-//       businessId: userId,
-//       destination: transfer.destination,
-//     };
+const transferBalanceService = async (
+  accountId: string,
+  amt: number,
+) => {
+  // const withdreawAmount = await availablewithdrawAmount('stripe', userId);
+  // // console.log('withdreawAmount===', withdreawAmount[0].totalAmount);
 
-//     withdraw = withdrawService.addWithdrawService(withdrawData);
-//     if (!withdraw) {
-//       throw new AppError(httpStatus.BAD_REQUEST, 'Withdrawal failed');
-//     }
-//   }
-//   return withdraw;
-// };
+  // if (withdreawAmount[0].totalAmount < 0) {
+  //   throw new AppError(httpStatus.BAD_REQUEST, 'Amount must be positive');
+  // }
+  const amount =Number(amt) * 100;
+  const transfer = await stripe.transfers.create({
+    amount,
+    currency: 'usd',
+    destination: accountId,
+  });
+  // console.log('transfer', transfer);
+  if (!transfer) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Transfer failed');
+  }
+
+  return "Transfer successful";
+  // let withdraw;
+  // if (transfer) {
+  //   const withdrawData: any = {
+  //     transactionId: transfer.id,
+  //     amount: withdreawAmount[0].totalAmount,
+  //     method: 'stripe',
+  //     status: 'completed',
+  //     businessId: userId,
+  //     destination: transfer.destination,
+  //   };
+
+  //   withdraw = withdrawService.addWithdrawService(withdrawData);
+  //   if (!withdraw) {
+  //     throw new AppError(httpStatus.BAD_REQUEST, 'Withdrawal failed');
+  //   }
+  // }
+  // return withdraw;
+};
+
+
 // 0 0 */7 * *
 
 // cron.schedule('* * * * *', async () => {
@@ -1018,6 +1291,7 @@ export const paymentService = {
   getAllIncomeRatio,
   getAllOverview,
   getAllSubscriptionUsersByWeekly,
+  getFreelancerClientsCountryRegion,
   getAllIncomeRatiobyDays,
   createCheckout,
   automaticCompletePayment,
@@ -1025,7 +1299,7 @@ export const paymentService = {
   //   paymentRefundService,
   //   filterBalanceByPaymentMethod,
   //   filterWithdrawBalanceByPaymentMethod,
-  //   createStripeAccount,
-  //   refreshAccountConnect,
-  //   transferBalanceService,
+    createStripeAccount,
+    refreshAccountConnect,
+    transferBalanceService,
 };

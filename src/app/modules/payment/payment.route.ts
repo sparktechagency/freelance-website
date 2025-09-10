@@ -6,7 +6,16 @@ import { USER_ROLE } from '../user/user.constants';
 const paymentRouter = express.Router();
 
 paymentRouter
-  .post('/add-payment', auth(USER_ROLE.FREELANCER), paymentController.addPayment)
+  .post(
+    '/add-payment',
+    auth(USER_ROLE.FREELANCER),
+    paymentController.addPayment,
+  )
+  .post(
+    '/create-stripe-account',
+    auth(USER_ROLE.FREELANCER),
+    paymentController.createStripeAccount,
+  )
   .get('/success', paymentController.successPage)
   .get('/cancel', paymentController.cancelPaymentPage)
   .get(
@@ -23,10 +32,14 @@ paymentRouter
     '/all-subsription-users-rasio',
     paymentController.getAllSubscrptionUserRasioBydays,
   )
+  .get(
+    '/freelancer-clients-country-region',
+    paymentController.getFreelancerClientsCountryRegion,
+  )
   .get('/all-income-rasio-by-days', paymentController.getAllIncomeRasioBydays)
   .get(
     '/all-earning-rasio',
-    auth(USER_ROLE.ADMIN),
+    // auth(USER_ROLE.ADMIN),
     paymentController.getAllEarningRasio,
   )
 

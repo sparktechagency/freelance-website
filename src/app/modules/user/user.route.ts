@@ -23,6 +23,11 @@ userRoutes
     validateRequest(resentOtpValidations.verifyOtpZodSchema),
     userController.userCreateVarification,
   )
+  .post(
+    '/freelancer-response/:id',
+    auth(USER_ROLE.CLIENT),
+    userController.freelancerResponse,
+  )
 
   // .post(
   //   '/swich-role',
@@ -39,6 +44,17 @@ userRoutes
       USER_ROLE.SUPER_ADMIN,
     ),
     userController.getMyProfile,
+  )
+  .get(
+    '/all-freelancers',
+    // auth(
+    //   USER_ROLE.CLIENT,
+    //   USER_ROLE.FREELANCER,
+    //   USER_ROLE.ADMIN,
+    //   USER_ROLE.SUB_ADMIN,
+    //   USER_ROLE.SUPER_ADMIN,
+    // ),
+    userController.getAllFreelancers,
   )
   .get('/all-users', userController.getAllUsers)
   .get('/all-users-count', userController.getAllUserCount)

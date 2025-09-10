@@ -2,20 +2,38 @@ import express from 'express';
 import auth from '../../middleware/auth';
 import { USER_ROLE } from '../user/user.constants';
 import { invoiceController } from './invoices.controller';
+import fileUpload from '../../middleware/fileUpload';
 
+const upload = fileUpload('./public/uploads/deliveryFile');
 const invoicesRouter = express.Router();
 
 
 invoicesRouter
   .post(
     '/create-invoice',
-    //  auth(USER_ROLE.ADMIN),
+    auth(USER_ROLE.FREELANCER),
     invoiceController.createInvoice,
   )
   .post(
     '/invoice-approve/:id',
-     auth(USER_ROLE.CLIENT),
+    auth(USER_ROLE.CLIENT),
     invoiceController.invoiceApprove,
+  )
+  .post(
+    '/invoice-delivery/:id',
+    auth(USER_ROLE.FREELANCER),
+    upload.fields([{ name: 'deliveryFiles', maxCount: 1 }]),
+    invoiceController.invoiceDelivery,
+  )
+  .post(
+    '/invoice-complete/:id',
+    auth(USER_ROLE.CLIENT),
+    invoiceController.invoiceComplete,
+  )
+  .get(
+    '/',
+    // auth(USER_ROLE.ADMIN),
+    invoiceController.getAllInvoices,
   )
   .get(
     '/client',

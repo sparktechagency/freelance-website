@@ -18,11 +18,11 @@ const app: Application = express();
 // app.set('views', path.join(__dirname, 'views'));
 // app.set('view engine', 'ejs');
 
-// app.post(
-//   '/api/v1/better-habits-payment-webhook',
-//   express.raw({ type: 'application/json' }),
-//   handleStripeWebhook
-// );
+app.post(
+  '/api/v1/freelance-payment-webhook',
+  express.raw({ type: 'application/json' }),
+  paymentController.conformWebhook,
+);
 
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));

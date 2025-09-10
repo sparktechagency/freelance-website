@@ -38,6 +38,19 @@ const userCreateVarification = catchAsync(async (req, res) => {
   });
 });
 
+const freelancerResponse = catchAsync(async (req, res) => {
+  const { userId } = req.user;
+  const id = req.params.id;
+  const newUser = await userService.freelancerResponse(userId, id);
+
+  return sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Freelancer response successfully',
+    data: newUser,
+  });
+});
+
 
 // const userSwichRole = catchAsync(async (req, res) => {
 //   const { userId } = req.user;
@@ -120,6 +133,15 @@ const getMyProfile = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getAllFreelancers = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.getAllFreelancers();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'All Freelancers fetched successfully',
+    data: result,
+  });
+});
 
 const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
   if (req?.file) {
@@ -159,9 +181,11 @@ const deleteMyAccount = catchAsync(async (req: Request, res: Response) => {
 export const userController = {
   createUser,
   userCreateVarification,
+  freelancerResponse,
   // userSwichRole,
   getUserById,
   getMyProfile,
+  getAllFreelancers,
   updateMyProfile,
   blockedUser,
   deleteMyAccount,
