@@ -18,6 +18,19 @@ const createInvoice = catchAsync(async (req, res) => {
   });
 });
 
+
+const createInvoiceChatBoot = catchAsync(async (req, res) => {
+
+  const result = await invoiceService.createInvoiceChatBoot();
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'ChatBoot Invoice successful!!',
+  });
+});
+
 const getAllInvoiceByClient = catchAsync(async (req, res) => {
   const {userId} = req.user;
   const { meta, result } = await invoiceService.getAllInvoiceByClientQuery(
@@ -161,6 +174,7 @@ const deleteSingleInvoice = catchAsync(async (req, res) => {
 
 export const invoiceController = {
   createInvoice,
+  createInvoiceChatBoot,
   getAllInvoiceByClient,
   getAllInvoices,
   getAllInvoiceByFreelancer,

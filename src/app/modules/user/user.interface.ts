@@ -23,6 +23,8 @@ export interface TUserCreate {
   isVarified: boolean;
   dailyRate: number;
   aboutCompany: string;
+  companyName: string;
+  companyId:string
 }
 
 export interface TUser extends TUserCreate {

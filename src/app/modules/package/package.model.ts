@@ -13,6 +13,10 @@ const faqSchema = new Schema<TPackage>(
       required: true,
       unique: true,
     },
+    category: {
+      type: String,
+      required: true,
+    },
     image: {
       type: String,
       required: [true, 'Images are required'],
@@ -38,6 +42,10 @@ const faqSchema = new Schema<TPackage>(
       required: true,
     },
     isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    isBadge: {
       type: Boolean,
       default: false,
     },

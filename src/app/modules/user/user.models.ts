@@ -92,6 +92,14 @@ const userSchema = new Schema<TUser>(
       ref: 'FreelancerInfo',
       default: null,
     },
+    companyId: {
+      type: String,
+      required: false,
+    },
+    companyName: {
+      type: String,
+      required: false,
+    },
   },
   {
     timestamps: true,

@@ -20,6 +20,7 @@ import * as paypalPayouts from '@paypal/payouts-sdk';
 import Subscription from '../subscription/subscription.model';
 import Invoice from '../invoices/invoices.model';
 import { Tender } from '../tenders/tenders.model';
+import Package from '../package/package.model';
 
 type SessionData = Stripe.Checkout.Session;
 
@@ -847,6 +848,12 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
             console.log('===subscriptionUpdated', subscriptionUpdated);
           }
 
+          const purchestPackage = await Package.findById(subscription?.packageId);
+
+          if (!purchestPackage) {
+            console.log('===purchestPackage', purchestPackage);
+          }
+
           const paymentData: any = {
             userId: userId,
             amount: subscription?.price,
@@ -865,10 +872,17 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
             console.log('===payment.length', payment);
           }
 
-          await Subscription.deleteMany(
-            { userId, status: 'pending' },
-            { session },
-          );
+          if (purchestPackage?.isBadge){
+            await User.findByIdAndUpdate(
+              userId,
+              { isVarified: true },
+              { session },
+            );
+          }
+            await Subscription.deleteMany(
+              { userId, status: 'pending' },
+              { session },
+            );
         } else {
          
           const invoice: any = await Invoice.findById(invoiceId);
@@ -900,19 +914,24 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
             console.log('Tender update failed');
           }
           // 5% of amount minuse main amount
-          const fee = (5 * invoice?.amount) / 100;
-          const totalAmount = invoice?.amount - fee;
+          // const fee = (5 * invoice?.amount) / 100;
+          // const totalAmount = invoice?.amount - fee;
+
+          const totalAmountPayment = paymentIntent.amount_received / 100;
+          // minuse 7% of amount
+          const feePayment = (7 * totalAmountPayment);
+          const totalAmountPaymentFinal = totalAmountPayment - feePayment;
 
           const paymentData: any = {
             userId: userId,
-            amount: invoice?.amount,
+            amount: totalAmountPayment,
             method: 'stripe',
             transactionId: paymentIntentId,
             invoiceId: invoice?._id,
             status: 'paid',
             sessionId: sessionId,
             paymentType: 'invoice',
-            transferAmount: totalAmount,
+            transferAmount: totalAmountPaymentFinal,
             // transactionDate: subscription?.createdAt,
           };
 

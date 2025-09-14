@@ -80,6 +80,7 @@
     "mangopay2-nodejs-sdk": "^1.60.2",
     "node-cron": "^3.0.3",
     "node-schedule": "^2.1.1",
+    "openai": "^5.20.1",
     "paypal-rest-sdk": "^1.8.1",
     "postcode-validator": "^3.10.3",
     "redis": "^4.7.1",

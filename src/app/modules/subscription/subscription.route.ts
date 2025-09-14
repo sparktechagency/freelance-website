@@ -16,7 +16,7 @@ subcriptionRouter
     // upload.fields([{ name: 'image', maxCount: 1 }]),
     subscriptionController.createSubscription,
   )
-  .get('/', auth(USER_ROLE.CLIENT), subscriptionController.getAllMySubscription)
+  .get('/', auth(USER_ROLE.CLIENT, USER_ROLE.FREELANCER), subscriptionController.getAllMySubscription)
   .get(
     '/existe',
     auth(USER_ROLE.CLIENT),

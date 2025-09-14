@@ -9,6 +9,10 @@ import mongoose from 'mongoose';
 import { paymentService } from '../payment/payment.service';
 import { Payment } from '../payment/payment.model';
 import { StripeAccount } from '../stripeAccount/stripeAccount.model';
+import axios from 'axios';
+import OpenAI from 'openai';
+import Subscription from '../subscription/subscription.model';
+// const client = new OpenAI();
 
 const createInvoice = async (payload: TInvoices) => {
   console.log('Invoice payload=', payload);
@@ -18,6 +22,9 @@ const createInvoice = async (payload: TInvoices) => {
   if (client?.role !== 'client') {
     throw new AppError(403, 'Client not found!!');
   }
+
+
+
 
   const stripeConnectedAccount = await StripeAccount.findOne({
     userId: payload.freelancerUserId
@@ -30,6 +37,21 @@ const createInvoice = async (payload: TInvoices) => {
   if(stripeConnectedAccount.isCompleted === false){
     throw new AppError(403, 'Stripe account not completed!!');
   }
+
+
+  const runningSubscription = await Subscription.findOne({
+    userId: payload.freelancerUserId,
+    isDeleted: false,
+    endDate: { $gt: new Date() },
+    type: ['monthly', 'yearly'],
+    $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
+  });
+
+
+  if(!runningSubscription){
+    throw new AppError(403, 'Running subscription not found!!');
+  }
+
 
   if(payload.invoiceType === 'tender'){
     if(!payload.tenderId){
@@ -71,7 +93,45 @@ if(payload.invoiceType === 'service'){
     throw new AppError(403, 'Invoice create faild!!');
   }
 
-  return result;
+  if (result){
+
+    await Subscription.updateOne(
+      {
+        userId: payload.freelancerUserId,
+        isDeleted: false,
+        endDate: { $gt: new Date() },
+        type: ['monthly', 'yearly'],
+        $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
+      },
+      {
+        $inc: { takeTenderCount: 1 },
+      },
+    );
+
+  }
+     return result;
+};
+
+
+const createInvoiceChatBoot = async () => {
+  // console.log('Invoice payload=', payload);
+//   const openAiApiKey =
+//     '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';
+//   // const prompt = "how are you?";
+
+//   const openai = new OpenAI({
+//     apiKey: openAiApiKey,
+//   });
+
+
+// const response = await client.responses.create({
+//   model: 'gpt-5',
+//   input: 'Write a short bedtime story about a unicorn.',
+// });
+
+// console.log(response.output_text);
+   
+
 };
 
 const getAllInvoiceByClientQuery = async (query: Record<string, unknown>, userId: string) => {
@@ -87,6 +147,8 @@ const getAllInvoiceByClientQuery = async (query: Record<string, unknown>, userId
   const meta = await InvoiceQuery.countTotal();
   return { meta, result };
 };
+
+
 
 const getAllInvoices = async (
   query: Record<string, unknown>
@@ -219,10 +281,16 @@ const invoiceApprove = async (clientUserId: string, id: string) => {
 
     // }
 
+    const add7Parcent = invoice.amount * 0.07;
+    const totalUpdateAmount = invoice.amount + add7Parcent;
+
+
     const paymentData = {
-      amount: invoice.amount,
+      amount: totalUpdateAmount, // add 7% commission to the amount
       invoiceId: invoice._id,
     };
+
+
         
     
         const url = await paymentService.createCheckout(
@@ -363,6 +431,7 @@ const deletedInvoiceQuery = async (id: string) => {
 
 export const invoiceService = {
   createInvoice,
+  createInvoiceChatBoot,
   getAllInvoiceByClientQuery,
   getAllInvoices,
   getAllInvoiceByFreelancerQuery,
