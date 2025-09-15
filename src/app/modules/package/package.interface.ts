@@ -7,5 +7,6 @@ export type TPackage = {
   type: 'monthly' | 'yearly';
   tenderCount: number | string;
   isDeleted: boolean;
-  isBadge: boolean
+  isBadge: boolean;
+  isSupport: boolean;
 };

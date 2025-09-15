@@ -5,8 +5,8 @@ import { User } from "../modules/user/user.models";
 
 const superAdminData = {
   fullName: 'Admin',
-  email: 'admin@gmail.com',
-  password: 'admin123',
+  email: 'tanvirshapnil.19359@gmail.com',
+  password: 'hello123',
   role: 'admin',
 };
 

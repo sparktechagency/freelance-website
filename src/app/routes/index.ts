@@ -27,6 +27,7 @@ import tenderRoutes from '../modules/tenders/tenders.route';
 import packageRouter from '../modules/package/package.route';
 import subcriptionRouter from '../modules/subscription/subscription.route';
 import invoicesRouter from '../modules/invoices/invoices.route';
+import supportMessageRouter from '../modules/supportMessage/supportMessage.route';
 
 const router = Router();
 
@@ -147,7 +148,10 @@ const moduleRoutes = [
     path: '/invoice',
     route: invoicesRouter,
   },
- 
+  {
+    path: '/support-message',
+    route: supportMessageRouter,
+  },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
 

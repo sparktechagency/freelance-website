@@ -15,6 +15,9 @@ const stripe = {
   stripe_payment_success_url: process.env.SUCCESS_URL,
   stripe_payment_cancel_url: process.env.CANCEL_URL,
 };
+const ai_info = {
+  ai_gemini_token: process.env.AI_GEMINI_TOKEN,
+};
 
 export default {
   NODE_ENV: process.env.NODE_ENV,
@@ -45,4 +48,5 @@ export default {
   hospitable_api_url: process.env.HOSPITABLE_API_URL,
   hospitable_api_key: process.env.HOSPITABLE_API_KEY,
   // user_jwt_token: process.env.USER_JWT_TOKEN,
+  ai_info,
 };

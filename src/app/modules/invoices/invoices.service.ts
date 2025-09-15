@@ -10,9 +10,10 @@ import { paymentService } from '../payment/payment.service';
 import { Payment } from '../payment/payment.model';
 import { StripeAccount } from '../stripeAccount/stripeAccount.model';
 import axios from 'axios';
-import OpenAI from 'openai';
 import Subscription from '../subscription/subscription.model';
-// const client = new OpenAI();
+import OpenAI from 'openai';
+import config from '../../config';
+import { GoogleGenAI } from '@google/genai';
 
 const createInvoice = async (payload: TInvoices) => {
   console.log('Invoice payload=', payload);
@@ -23,21 +24,17 @@ const createInvoice = async (payload: TInvoices) => {
     throw new AppError(403, 'Client not found!!');
   }
 
-
-
-
   const stripeConnectedAccount = await StripeAccount.findOne({
-    userId: payload.freelancerUserId
-  })
+    userId: payload.freelancerUserId,
+  });
 
-  if(!stripeConnectedAccount){
+  if (!stripeConnectedAccount) {
     throw new AppError(403, 'Stripe account not found!!');
   }
 
-  if(stripeConnectedAccount.isCompleted === false){
+  if (stripeConnectedAccount.isCompleted === false) {
     throw new AppError(403, 'Stripe account not completed!!');
   }
-
 
   const runningSubscription = await Subscription.findOne({
     userId: payload.freelancerUserId,
@@ -47,14 +44,12 @@ const createInvoice = async (payload: TInvoices) => {
     $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
   });
 
-
-  if(!runningSubscription){
+  if (!runningSubscription) {
     throw new AppError(403, 'Running subscription not found!!');
   }
 
-
-  if(payload.invoiceType === 'tender'){
-    if(!payload.tenderId){
+  if (payload.invoiceType === 'tender') {
+    if (!payload.tenderId) {
       throw new AppError(403, 'tender id required!');
     }
 
@@ -63,7 +58,10 @@ const createInvoice = async (payload: TInvoices) => {
       throw new AppError(403, 'Tender not found!!');
     }
 
-    const invoice = await Invoice.findOne({tenderId: payload.tenderId, freelancerUserId: payload.freelancerUserId});
+    const invoice = await Invoice.findOne({
+      tenderId: payload.tenderId,
+      freelancerUserId: payload.freelancerUserId,
+    });
     if (invoice) {
       throw new AppError(403, 'Invoice already exist!!');
     }
@@ -76,16 +74,13 @@ const createInvoice = async (payload: TInvoices) => {
     if (invoiceApproved) {
       throw new AppError(403, 'Invoice already accepted!!');
     }
-
-
-}
-
-if(payload.invoiceType === 'service'){
-  if(payload.tenderId){
-    throw new AppError(403, 'tender id not required!');
   }
-}
 
+  if (payload.invoiceType === 'service') {
+    if (payload.tenderId) {
+      throw new AppError(403, 'tender id not required!');
+    }
+  }
 
   const result = await Invoice.create(payload);
 
@@ -93,8 +88,7 @@ if(payload.invoiceType === 'service'){
     throw new AppError(403, 'Invoice create faild!!');
   }
 
-  if (result){
-
+  if (result) {
     await Subscription.updateOne(
       {
         userId: payload.freelancerUserId,
@@ -107,35 +101,33 @@ if(payload.invoiceType === 'service'){
         $inc: { takeTenderCount: 1 },
       },
     );
-
   }
-     return result;
+  return result;
 };
-
 
 const createInvoiceChatBoot = async () => {
-  // console.log('Invoice payload=', payload);
-//   const openAiApiKey =
-//     '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';
-//   // const prompt = "how are you?";
+  console.log('api hit hoise!');
 
-//   const openai = new OpenAI({
-//     apiKey: openAiApiKey,
-//   });
+ const ai = new GoogleGenAI({});
 
-
-// const response = await client.responses.create({
-//   model: 'gpt-5',
-//   input: 'Write a short bedtime story about a unicorn.',
-// });
-
-// console.log(response.output_text);
-   
-
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: 'Explain how AI works in a few words',
+  });
+  
+  console.log('response', response);
+  
+  console.log(response.text);
 };
 
-const getAllInvoiceByClientQuery = async (query: Record<string, unknown>, userId: string) => {
-  const InvoiceQuery = new QueryBuilder(Invoice.find({clientUserId: userId}), query)
+const getAllInvoiceByClientQuery = async (
+  query: Record<string, unknown>,
+  userId: string,
+) => {
+  const InvoiceQuery = new QueryBuilder(
+    Invoice.find({ clientUserId: userId }),
+    query,
+  )
     .search([])
     .filter()
     .sort()
@@ -148,11 +140,7 @@ const getAllInvoiceByClientQuery = async (query: Record<string, unknown>, userId
   return { meta, result };
 };
 
-
-
-const getAllInvoices = async (
-  query: Record<string, unknown>
-) => {
+const getAllInvoices = async (query: Record<string, unknown>) => {
   const InvoiceQuery = new QueryBuilder(
     Invoice.find({ status: ['accepted', 'delivered', 'completed'] })
       .populate({
@@ -175,8 +163,14 @@ const getAllInvoices = async (
   return { meta, result };
 };
 
-const getAllInvoiceByFreelancerQuery = async (query: Record<string, unknown>, userId: string) => {
-  const InvoiceQuery = new QueryBuilder(Invoice.find({freelancerUserId: userId}), query)
+const getAllInvoiceByFreelancerQuery = async (
+  query: Record<string, unknown>,
+  userId: string,
+) => {
+  const InvoiceQuery = new QueryBuilder(
+    Invoice.find({ freelancerUserId: userId }),
+    query,
+  )
     .search([])
     .filter()
     .sort()
@@ -202,7 +196,6 @@ const getSingleInvoiceQuery = async (id: string) => {
   }
   return invoice;
 };
-
 
 const updateSingleInvoiceQuery = async (id: string, payload: any) => {
   console.log('id', id);
@@ -284,21 +277,15 @@ const invoiceApprove = async (clientUserId: string, id: string) => {
     const add7Parcent = invoice.amount * 0.07;
     const totalUpdateAmount = invoice.amount + add7Parcent;
 
-
     const paymentData = {
       amount: totalUpdateAmount, // add 7% commission to the amount
       invoiceId: invoice._id,
     };
 
-
-        
-    
-        const url = await paymentService.createCheckout(
-          invoice.clientUserId,
-          paymentData,
-        );
-
-    
+    const url = await paymentService.createCheckout(
+      invoice.clientUserId,
+      paymentData,
+    );
 
     await session.commitTransaction();
 
@@ -311,13 +298,13 @@ const invoiceApprove = async (clientUserId: string, id: string) => {
   }
 };
 
-
 const invoiceDelivery = async (id: string, payload: any, files: any) => {
-
   if (files?.deliveryFiles && files?.deliveryFiles.length > 0) {
-    payload.deliveryFiles = files.deliveryFiles.map((file: any) => file.path.replace(/^public[\\/]/, ''));
+    payload.deliveryFiles = files.deliveryFiles.map((file: any) =>
+      file.path.replace(/^public[\\/]/, ''),
+    );
   }
-    const freelancer = await User.findById(payload.freelancerUserId);
+  const freelancer = await User.findById(payload.freelancerUserId);
   if (!freelancer) {
     throw new AppError(404, 'Freelancer Not Found!!');
   }
@@ -335,7 +322,15 @@ const invoiceDelivery = async (id: string, payload: any, files: any) => {
     throw new AppError(404, 'Invoice already delivered!!');
   }
 
-  const result = await Invoice.findByIdAndUpdate(id, {deliveryFiles:payload.deliveryFiles, deliveryMessage:payload.deliveryMessage, status: 'delivered'}, { new: true });
+  const result = await Invoice.findByIdAndUpdate(
+    id,
+    {
+      deliveryFiles: payload.deliveryFiles,
+      deliveryMessage: payload.deliveryMessage,
+      status: 'delivered',
+    },
+    { new: true },
+  );
   if (!result) {
     throw new AppError(404, 'Invoice Result Not Found !');
   }
@@ -343,9 +338,7 @@ const invoiceDelivery = async (id: string, payload: any, files: any) => {
   return result;
 };
 
-
 const invoiceComplete = async (clientUserId: string, id: string) => {
-
   const freelancer = await User.findById(clientUserId);
   if (!freelancer) {
     throw new AppError(404, 'Freelancer Not Found!!');
@@ -367,7 +360,7 @@ const invoiceComplete = async (clientUserId: string, id: string) => {
   const result = await Invoice.findByIdAndUpdate(
     id,
     {
-      status: 'completed'
+      status: 'completed',
     },
     { new: true },
   );
@@ -382,7 +375,7 @@ const invoiceComplete = async (clientUserId: string, id: string) => {
     userId: clientUserId,
   });
 
-  if(!transaction){
+  if (!transaction) {
     throw new AppError(404, 'Payment Not Found !');
   }
 
@@ -400,17 +393,13 @@ const invoiceComplete = async (clientUserId: string, id: string) => {
     throw new AppError(404, 'Stripe Connected Account Not Found!!');
   }
 
-
   await paymentService.transferBalanceService(
     stripeConnectedAccount.accountId,
     transaction.transferAmount,
   );
 
-
-
   return result;
 };
-
 
 const deletedInvoiceQuery = async (id: string) => {
   if (!id) {

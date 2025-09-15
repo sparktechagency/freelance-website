@@ -49,6 +49,10 @@ const faqSchema = new Schema<TPackage>(
       type: Boolean,
       default: false,
     },
+    isSupport: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );

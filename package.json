@@ -70,6 +70,7 @@
     "zod": "^3.23.8"
   },
   "dependencies": {
+    "@google/genai": "^1.19.0",
     "@paypal/checkout-server-sdk": "^1.0.3",
     "@paypal/payouts-sdk": "^1.1.1",
     "@types/node-schedule": "^2.1.7",
