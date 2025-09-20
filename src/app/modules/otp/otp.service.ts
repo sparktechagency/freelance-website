@@ -50,19 +50,57 @@ const checkOtpByEmail = async (email: string) => {
   return { isExist, isExpireOtp };
 };
 
+// const otpMatch = async (email: string, otp: string) => {
+//   console.log(email, otp);
+//   const isOtpMatch = await Otp.findOne({
+//     sentTo: email,
+//     otp,
+//     status: 'pending',
+//     expiredAt: { $gt: new Date() },
+//   });
+
+//   console.log({ isOtpMatch });
+
+//   return isOtpMatch;
+// };
+
 const otpMatch = async (email: string, otp: string) => {
   console.log(email, otp);
-  const isOtpMatch = await Otp.findOne({
+
+  // Query to find OTP record that matches email, otp, and status is 'pending'
+  const otpRecord = await Otp.findOne({
     sentTo: email,
     otp,
-    status: 'pending',
-    expiredAt: { $gt: new Date() },
   });
 
-  // console.log({ isOtpMatch });
+  // Handle case where OTP record doesn't exist
+  if (!otpRecord) {
+    console.log('OTP does not match');
+    throw new AppError(httpStatus.BAD_REQUEST, 'OTP does not match');
+  }
 
-  return isOtpMatch;
+  // Case 1: OTP is expired
+  if (otpRecord.expiredAt < new Date()) {
+    console.log('OTP is expired');
+    throw new AppError(httpStatus.BAD_REQUEST, 'OTP is expired');
+  }
+
+  // Case 2: OTP is already verified
+  if (otpRecord.status === 'verified') {
+    console.log('OTP is already verified');
+    throw new AppError(httpStatus.BAD_REQUEST, 'OTP is already verified');
+  }
+
+  // // Case 3: OTP matches and is valid (pending)
+  // if (otpRecord.status === 'pending' && otpRecord.expiredAt < new Date()) {
+  //   console.log('OTP match and not expired');
+  //   throw new AppError(httpStatus.BAD_REQUEST, 'OTP is expired');
+  // }
+
+  // Default case: OTP does not match
+  return otpRecord;
 };
+
 
 const updateOtpByEmail = async (
   email: string,

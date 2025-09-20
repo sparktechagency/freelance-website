@@ -19,6 +19,7 @@ import { imageUrlGenarate } from '../../utils/imageUrl';
 import { sendEmail } from '../../utils/mailSender';
 import FreelancerInfo from '../freelancerInfo/freelancerInfo.model';
 import Chat from '../chat/chat.model';
+import exp from 'constants';
 
 export type IFilter = {
   searchTerm?: string;
@@ -146,12 +147,12 @@ console.log('token', token)
   process.nextTick(async () => {
     await otpServices.updateOtpByEmail(email, {
       status: 'verified',
+      expiredAt: new Date(),
     });
   });
 
-  
 
- 
+
 
   const isExist = await User.isUserExist(email as string);
 

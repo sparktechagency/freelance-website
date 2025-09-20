@@ -20,8 +20,9 @@ const createInvoice = catchAsync(async (req, res) => {
 
 
 const createInvoiceChatBoot = catchAsync(async (req, res) => {
+  const prompt = req.body.prompt;
 
-  const result = await invoiceService.createInvoiceChatBoot();
+  const result = await invoiceService.createInvoiceChatBoot(prompt);
 
   sendResponse(res, {
     success: true,

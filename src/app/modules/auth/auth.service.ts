@@ -20,6 +20,7 @@ import { generateOptAndExpireTime } from '../otp/otp.utils';
 import { otpServices } from '../otp/otp.service';
 import { otpSendEmail } from '../../utils/eamilNotifiacation';
 import { OTPVerifyAndCreateUserProps, userService } from '../user/user.service';
+import exp from 'constants';
 
 // Login
 const login = async (payload: TLogin) => {
@@ -154,6 +155,7 @@ const forgotPasswordOtpMatch = async ({
   process.nextTick(async () => {
     await otpServices.updateOtpByEmail(email, {
       status: 'verified',
+      expiredAt: new Date(),
     });
   });
 
