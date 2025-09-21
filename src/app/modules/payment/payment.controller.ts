@@ -41,6 +41,34 @@ const addPayment = catchAsync(async (req, res, next) => {
 });
 
 
+
+const subscriptionRenewal = catchAsync(async (req, res, next) => {
+  const { userId } = req.user;
+  const subscriptionId = req.params.id;
+
+  const result = await paymentService.subscriptionRenewal(
+    userId,
+    subscriptionId,
+  );
+
+  if (result) {
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: 'Subscription Renewal Successfull!!',
+      data: result,
+    });
+  } else {
+    sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: true,
+      message: 'Data is not found',
+      data: {},
+    });
+  }
+});
+
+
 const getAllPayment = catchAsync(async (req, res, next) => {
   const result = await paymentService.getAllPaymentService(req.query);
   // // console.log('result',result)
@@ -289,8 +317,6 @@ res.send(successAccountTemplete);
 
 //webhook
 
-
-
 const createCheckout = catchAsync(async (req, res) => {
   const { userId } = req.user;
   const result = await paymentService.createCheckout(userId, req.body);
@@ -322,6 +348,8 @@ const conformWebhook = catchAsync(async (req, res) => {
     // return;
   }
 });
+
+
 
 
 const getAllEarningRasio = catchAsync(async (req, res) => {
@@ -425,6 +453,7 @@ const createStripeAccount = catchAsync(async (req, res) => {
 
 export const paymentController = {
   addPayment,
+  subscriptionRenewal,
   getAllPayment,
   getAllPaymentReveniew,
   getSinglePayment,

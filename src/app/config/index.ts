@@ -40,6 +40,7 @@ export default {
   stripe_secret: process.env.STRIPE_API_SECRET,
   // stripe_key: process.env.STRIPE_API_KEY,
   WEBHOOK: process.env.WEBHOOK || '',
+  RENEWAL_WEBHOOK: process.env.RENEWAL_WEBHOOK || '',
   aws,
   stripe,
   googleApiKey: process.env.GOOGLEAPI,

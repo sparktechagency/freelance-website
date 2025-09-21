@@ -24,6 +24,12 @@ app.post(
   paymentController.conformWebhook,
 );
 
+// app.post(
+//   '/api/v1/subscription-renewal-webhook',
+//   express.raw({ type: 'application/json' }),
+//   paymentController.renewalconformWebhook,
+// );
+
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 

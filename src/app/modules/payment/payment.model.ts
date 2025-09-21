@@ -51,7 +51,7 @@ const paymentSchema = new Schema<TPayment>(
     },
     paymentType: {
       type: String,
-      enum: ['subscription', 'invoice'],
+      enum: ['subscription', 'invoice', 'renewal'],
       required: true,
       default: 'subscription',
     },

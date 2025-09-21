@@ -21,6 +21,7 @@ import Subscription from '../subscription/subscription.model';
 import Invoice from '../invoices/invoices.model';
 import { Tender } from '../tenders/tenders.model';
 import Package from '../package/package.model';
+import { calculateEndDate } from '../subscription/subcription.utils';
 
 type SessionData = Stripe.Checkout.Session;
 
@@ -58,6 +59,64 @@ const addPaymentService = async (payload: any) => {
     await session.commitTransaction();
     session.endSession();
     return payment;
+  } catch (error) {
+    console.error('Transaction Error:', error);
+    await session.abortTransaction();
+    session.endSession();
+    throw error;
+  }
+};
+
+
+const subscriptionRenewal = async (userId: string, subscriptionId: string) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const user = await User.findById(userId).session(session);
+    if (!user) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'User not found');
+    }
+
+
+    const subscription = await Subscription.findById(subscriptionId).session(session);
+
+    if (!subscription) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Subscription not found');
+    }
+
+    const existingRunningSubscription = await Subscription.findOne({
+      userId: userId,
+      type: subscription.type,
+      title: subscription.title,
+      packageId: subscription.packageId,
+      endDate: { $gt: new Date() },
+      $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
+      status: 'running',
+      isDeleted: false,
+    }).session(session);
+
+    console.log('existingRunningSubscription==', existingRunningSubscription);
+
+    if (existingRunningSubscription) {
+      throw new AppError(
+        400,
+        'Your subscription is already running! Please check your profile.',
+      );
+    }
+
+    const paymentData = {
+      amount: subscription.price,
+      subscriptionId: subscription._id,
+      type:"renewal",
+    };
+        
+    
+        const url = await paymentService.createCheckout(user._id, paymentData);
+
+    await session.commitTransaction();
+    session.endSession();
+    return url;
   } catch (error) {
     console.error('Transaction Error:', error);
     await session.abortTransaction();
@@ -339,7 +398,7 @@ const getAllOverview = async () => {
 
     const last7DaysEarning =
       totalRevenueLast7DaysForInvoice[0]?.totalRevenue +
-      totalRevenueLast7DaysForSubscription[0]?.totalIncome;
+      totalRevenueLast7DaysForSubscription[0]?.totalIncome || 0;
 
 
     const dailyDeliveriesLast7Days = await Invoice.aggregate([
@@ -748,9 +807,14 @@ const createCheckout = async (userId: any, payload: any) => {
   const metaData: any = {
     userId: String(userId),
   };
-  if (payload.subscriptionId)
+  if (payload.subscriptionId && !payload.type)
     metaData.subscriptionId = String(payload.subscriptionId);
-  if (payload.invoiceId) metaData.invoiceId = String(payload.invoiceId);
+  if (payload.invoiceId && !payload.type) metaData.invoiceId = String(payload.invoiceId);
+
+  if (payload.subscriptionId && payload.type) {
+    metaData.subscriptionId = String(payload.subscriptionId);
+    metaData.type = String(payload.type);
+  }
 
   const lineItems = [
     {
@@ -798,6 +862,55 @@ const createCheckout = async (userId: any, payload: any) => {
   return { url };
 };
 
+
+const createCheckoutByRenew = async (userId: any, payload: any) => {
+  console.log('stripe payment', payload);
+  let session = {} as { id: string };
+
+ 
+
+  const lineItems = [
+    {
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: 'Amount',
+        },
+        unit_amount: Math.round(payload.amount * 100),
+      },
+      quantity: 1,
+    },
+  ];
+
+  const sessionData: any = {
+    payment_method_types: ['card'],
+    mode: 'payment',
+    success_url: config.stripe.stripe_payment_success_url,
+    cancel_url: config.stripe.stripe_payment_cancel_url,
+    line_items: lineItems,
+    metadata: {
+      userId: String(userId),
+      subscriptionId: String(payload.subscriptionId),
+    },
+  };
+
+  console.log('sessionData=', sessionData);
+
+  try {
+    console.log('try session');
+    session = await stripe.checkout.sessions.create(sessionData);
+  } catch (error) {
+    console.log('Error', error);
+  }
+
+  console.log('try session 22');
+  const { id: session_id, url }: any = session || {};
+
+  console.log({ url });
+
+  return { url };
+};
+
 const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -818,6 +931,7 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
         const subcriptionId = metadata?.subscriptionId as string;
         const invoiceId = metadata?.invoiceId as string;
         const userId = metadata?.userId as string;
+        const type = metadata?.type as string;
 
         if (!paymentIntentId) {
           throw new AppError(
@@ -836,7 +950,8 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
 
         console.log('===subcriptionId', subcriptionId);
 
-        if (subcriptionId) {
+        if (subcriptionId && !type) {
+          console.log('******************************************************subscriptionid and not type');
           const subscription = await Subscription.findById(subcriptionId);
           console.log('===subscription', subscription);
           const subscriptionUpdated = await Subscription.findByIdAndUpdate(
@@ -883,8 +998,10 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
               { userId, status: 'pending' },
               { session },
             );
-        } else {
-         
+        } else if (invoiceId && !type) {
+         console.log(
+           '******************************************************invoiceId and not type',
+         );
           const invoice: any = await Invoice.findById(invoiceId);
           console.log('===invoice', invoice);
           const invoiceUpdated = await Invoice.findByIdAndUpdate(
@@ -948,6 +1065,63 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
               { session },
             );
           }
+        }else if(subcriptionId && type){
+         console.log(
+           '******************************************************subscriptionid and  type',
+         );
+           const subscription: any = await Subscription.findById(subcriptionId);
+           console.log('===subscription', subscription);
+           const days = subscription.type === 'monthly' ? 30 : 365;
+           const generateEndDate = calculateEndDate(new Date(), days);
+           const myRemainingTenderCount =
+             subscription.tenderCount - subscription.takeTenderCount;
+           const subscriptionUpdated = await Subscription.findByIdAndUpdate(
+             subcriptionId,
+             {
+               status: 'running',
+               endDate: generateEndDate,
+               tenderCount: myRemainingTenderCount + 5,
+               takeTenderCount: 0,
+             },
+             { new: true, session },
+           );
+           if (!subscriptionUpdated) {
+             console.log('===subscriptionUpdated', subscriptionUpdated);
+           }
+
+           const purchestPackage = await Package.findById(
+             subscription?.packageId,
+           );
+
+           if (!purchestPackage) {
+             console.log('===purchestPackage', purchestPackage);
+           }
+
+           const paymentData: any = {
+             userId: userId,
+             amount: subscription?.price,
+             method: 'stripe',
+             transactionId: paymentIntentId,
+             subcriptionId: subscription?._id,
+             status: 'paid',
+             sessionId: sessionId,
+             paymentType: 'renewal',
+             // transactionDate: subscription?.createdAt,
+           };
+
+           const payment = await Payment.create([paymentData], { session });
+           console.log('===payment', payment);
+           if (payment.length === 0) {
+             console.log('===payment.length', payment);
+           }
+
+           if (purchestPackage?.isBadge) {
+             await User.findByIdAndUpdate(
+               userId,
+               { isVarified: true },
+               { session },
+             );
+           }
         }
 
         const user = await User.findById(userId);
@@ -1016,6 +1190,8 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
     session.endSession();
   }
 };
+
+
 
 // const paymentRefundService = async (
 //   amount: number | null,
@@ -1302,6 +1478,7 @@ const transferBalanceService = async (
 
 export const paymentService = {
   addPaymentService,
+  subscriptionRenewal,
   getAllPaymentService,
   getAllPaymentServiceReveniew,
   singlePaymentService,
@@ -1313,6 +1490,7 @@ export const paymentService = {
   getFreelancerClientsCountryRegion,
   getAllIncomeRatiobyDays,
   createCheckout,
+  createCheckoutByRenew,
   automaticCompletePayment,
   getAllEarningRatio,
   //   paymentRefundService,

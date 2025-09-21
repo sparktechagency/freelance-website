@@ -16,6 +16,11 @@ paymentRouter
     auth(USER_ROLE.FREELANCER),
     paymentController.createStripeAccount,
   )
+  .post(
+    '/subscription-renewal/:id',
+    auth(USER_ROLE.FREELANCER),
+    paymentController.subscriptionRenewal,
+  )
   .get('/success', paymentController.successPage)
   .get('/cancel', paymentController.cancelPaymentPage)
   .get(
