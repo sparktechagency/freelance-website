@@ -16,6 +16,10 @@ const createChat = async (payload: ISupportMessages) => {
   if (!sender) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Sender is not found!!');
   }
+
+  if(sender.role !== 'freelancer' && sender.role !== 'client') {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Sender is not valid!!');
+  }
   const admin = await User.findOne({ role: 'admin' });
   if (!admin) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Admin is not found!!');
@@ -54,15 +58,23 @@ const getMyChatList = async (
     const matchingUserIds = matchingUsers.map((u) => u._id);
 
     chats = await supportModels.SupportChat.find({
-      $and: [{ participants: { $in: matchingUserIds } }],
+      $and: [
+        { participants: { $all: [userId] } },
+        { participants: { $in: matchingUserIds } },
+      ],
     }).populate({
       path: 'participants',
-      select: 'fullName email image role',
+      select: 'fullName email profile role',
+      match: { _id: { $ne: userId } },
     });
   } else {
-    chats = await supportModels.SupportChat.find({}).populate({
+    console.log('ai chatlist hit hoise');
+    chats = await supportModels.SupportChat.find({
+      participants: { $all: userId },
+    }).populate({
       path: 'participants',
-      select: 'fullName email image role',
+      select: 'fullName email profile role',
+      match: { _id: { $ne: userId } },
     });
   }
 
@@ -81,7 +93,6 @@ const getMyChatList = async (
       updatedAt: -1,
     });
 
-    console.log('message', message);
 
     const unreadMessageCount =
       await supportModels.SupportMessage.countDocuments({
@@ -89,22 +100,26 @@ const getMyChatList = async (
         seen: false,
         sender: { $ne: userId },
       });
-    console.log('unreadMessageCount', unreadMessageCount);
+    // console.log('unreadMessageCount', unreadMessageCount);
 
     // if (message) {
     //   data.push({ chat: chatItem, message: message, unreadMessageCount });
     // }
+    
 
     const defaultMessage = {
       _id: '',
       message: '',
       image: '',
       seen: false,
+      sender: '',
       chatId: '',
       createdAt: null,
       updatedAt: null,
       __v: '',
     };
+
+    // console.log('chatItem=================', chatItem);
 
     data.push({
       chat: chatItem,
@@ -117,11 +132,15 @@ const getMyChatList = async (
     const dateB = (b.message && b.message.createdAt) || 0;
     return dateB - dateA;
   });
-  console.log('data.length', data.length);
+  // console.log('data.length', data.length);
 
-  console.log('data', data);
-
-  return data.length ? data: chats;
+  // console.log('data', data);
+  // console.log('chats', chats);
+const result = data.length ? data : chats;
+// console.log('Ternary result:', result);
+// console.log('Result === data:', result === data);
+// console.log('Result === chats:', result === chats);
+  return result;
 };
 
 const createMessages = async (payload: ISupportMessages) => {
@@ -133,39 +152,71 @@ const createMessages = async (payload: ISupportMessages) => {
   if (!sender) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Sender is not found!!');
   }
-  const admin = await User.findOne({ role: 'admin' });
-  if (!admin) {
-    throw new AppError(httpStatus.BAD_REQUEST, 'Admin is not found!!');
-  }
 
-  const chatPayload = {
-    participants: [sender._id, admin._id],
-  };
+    const messagePayload: any = {
+      sender: sender._id,
+      message: payload.message,
+    };
 
-  const chat = await supportModels.SupportChat.findOne({
-    participants: { $all: chatPayload.participants },
-  }).populate(['participants']);
-  console.log('chat 0000', chat);
+   if (payload.image) {
+     messagePayload.image = payload.image;
+   }
 
-  const messagePayload: any = {
-    sender: sender._id,
-    message: payload.message,
-  };
+  if (sender.role === 'freelancer' || sender.role === 'client') {
+    const admin = await User.findOne({ role: 'admin' });
+    if (!admin) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Admin is not found!!');
+    }
 
-  if (payload.image) {
-    messagePayload.image = payload.image;
-  }
+    const chatPayload = {
+      participants: [sender._id, admin._id],
+    };
 
-  if (chat) {
+    const chat = await supportModels.SupportChat.findOne({
+      participants: { $all: chatPayload.participants },
+    }).populate(['participants']);
+
+   
+
+    
+
+     if (chat) {
+       messagePayload.chatId = chat._id;
+       console.log('exist chat');
+     } else {
+       console.log('chatPayload');
+       // console.log('chatPayload.participants[0] === chatPayload.participants[1]', chatPayload.participants[0] === chatPayload.participants[1]);
+       if (
+         chatPayload.participants[0].toString() ===
+         chatPayload.participants[1].toString()
+       ) {
+         throw new AppError(
+           httpStatus.BAD_REQUEST,
+           'You can not chat with yourself',
+         );
+       }
+       const chat = await supportModels.SupportChat.create({
+         participants: chatPayload.participants,
+       });
+       messagePayload.chatId = chat._id;
+     }
+
+
+  }else{
+
+    if (!payload.chatId) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Chat is required!!');
+    }
+
+    const chat = await supportModels.SupportChat.findById(payload.chatId);
+    if (!chat) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Chat is not found!!');
+    }
     messagePayload.chatId = chat._id;
-  } else {
-    console.log('chatPayload');
-    const chat = await supportModels.SupportChat.create({
-      participants: chatPayload.participants,
-    });
-    messagePayload.chatId = chat._id;
+
   }
 
+  console.log('last message payload', messagePayload);
   const result = await supportModels.SupportMessage.create(messagePayload);
 
   if (!result) {
@@ -274,7 +325,7 @@ const getMessagesByChatId = async (
     .fields();
 
   const resultAll = await TaskPostQuery.modelQuery;
-  console.log('resultAll', resultAll);
+  // console.log('resultAll', resultAll);
 
   const meta = await TaskPostQuery.countTotal();
   return { meta, resultAll };

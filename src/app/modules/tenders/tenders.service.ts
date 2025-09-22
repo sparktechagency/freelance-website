@@ -7,6 +7,7 @@ import { ITenders } from './tenders.interface';
 import { Tender } from './tenders.model';
 import Subscription from '../subscription/subscription.model';
 import Chat from '../chat/chat.model';
+import { notificationService } from '../notification/notification.service';
 
 const createTender = async (payload: ITenders) => {
   const category = await Category.findById(payload.categoryId);
@@ -49,6 +50,15 @@ const createTender = async (payload: ITenders) => {
       await runningSubscription.save();
     }
   }
+
+  const notificationData = {
+    userId: result.userId,
+    message: `New tender has been created by ${payload.title}`,
+    type: 'success',
+    role: 'client',
+  };
+  
+    await notificationService.createNotification(notificationData);
   return result;
 };
 

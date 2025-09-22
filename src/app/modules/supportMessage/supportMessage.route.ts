@@ -11,8 +11,13 @@ supportMessageRouter.get('/', supportMessageController.getAllMessages);
 
 supportMessageRouter.post(
   '/create-chat',
-  auth(USER_ROLE.FREELANCER),
+  auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
   supportMessageController.createChat,
+);
+supportMessageRouter.get(
+  '/my-chat-list',
+  auth(USER_ROLE.ADMIN),
+  supportMessageController.getMyChatList,
 );
 supportMessageRouter.get(
   '/my-chat-list',
@@ -21,7 +26,7 @@ supportMessageRouter.get(
 );
 supportMessageRouter.post(
   '/send-messages',
-  auth(USER_ROLE.ADMIN, USER_ROLE.FREELANCER),
+  auth(USER_ROLE.ADMIN, USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
   upload.fields([{ name: 'image', maxCount: 5 }]),
   supportMessageController.createMessages,
 );

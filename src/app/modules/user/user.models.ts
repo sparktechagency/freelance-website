@@ -69,6 +69,10 @@ const userSchema = new Schema<TUser>(
       type: Boolean,
       default: false,
     },
+    isSupported: {
+      type: Boolean,
+      default: false,
+    },
     dailyRate: {
       type: Number,
       default: 0,

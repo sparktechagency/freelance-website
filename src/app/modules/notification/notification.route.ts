@@ -14,14 +14,14 @@ notificationRoutes.post(
 );
 notificationRoutes.post(
   '/all-read',
-    auth(USER_ROLE.USER),
+  auth(USER_ROLE.CLIENT, USER_ROLE.FREELANCER, USER_ROLE.ADMIN),
   //   validateRequest(paymnetValidation),
   NotificationController.getAllReadNotification,
 );
 
 notificationRoutes.get(
   '',
-  auth(USER_ROLE.USER),
+  auth(USER_ROLE.CLIENT, USER_ROLE.FREELANCER, USER_ROLE.ADMIN),
   NotificationController.getAllNotificationByUser,
 );
 notificationRoutes.get(
@@ -32,13 +32,13 @@ notificationRoutes.get(
 notificationRoutes.get('/:id', NotificationController.getSingleNotification);
 notificationRoutes.patch(
   '/read/:id',
-  auth(USER_ROLE.USER),
+  auth(USER_ROLE.CLIENT, USER_ROLE.FREELANCER , USER_ROLE.ADMIN),
   NotificationController.getSingleReadNotification,
 );
 
 notificationRoutes.delete(
   '/:id',
-  auth(USER_ROLE.USER),
+  auth(USER_ROLE.CLIENT, USER_ROLE.FREELANCER, USER_ROLE.ADMIN),
   NotificationController.deletedNotification,
 );
 notificationRoutes.delete(

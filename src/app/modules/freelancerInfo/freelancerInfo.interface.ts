@@ -11,6 +11,10 @@ export type TSkill = {
   category: string;
   skill: string;
 };
+export type TSocialLink = {
+  name: string;
+  link: string;
+};
 
 export type TExperience = {
   companyName: string;
@@ -28,4 +32,6 @@ export type TFreelancerInfo = {
   educationCertifications: [TEducations];
   skills: [TSkill];
   experience: [TExperience];
+  socialLinks: [TSocialLink];
+  comments:string;
 };

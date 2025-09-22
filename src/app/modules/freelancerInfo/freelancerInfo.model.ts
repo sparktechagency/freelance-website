@@ -15,6 +15,11 @@ const SkillSchema = new Schema({
   skill: { type: String, required: true },
 });
 
+const SocialLinkSchema = new Schema({
+  name: { type: String, required: true },
+  link: { type: String, required: true },
+});
+
 // Experience Schema
 const ExperienceSchema = new Schema({
   companyName: { type: String, required: true },
@@ -25,12 +30,21 @@ const ExperienceSchema = new Schema({
 });
 
 // Freelancer Info Schema
-const FreelancerInfoSchema = new Schema({
-  freelancerUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  educationCertifications: { type: [EducationSchema], required: false },
-  skills: { type: [SkillSchema], required: false },
-  experience: { type: [ExperienceSchema], required: false },
-},{ timestamps: true });
+const FreelancerInfoSchema = new Schema(
+  {
+    freelancerUserId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    educationCertifications: { type: [EducationSchema], required: false },
+    skills: { type: [SkillSchema], required: false },
+    experience: { type: [ExperienceSchema], required: false },
+    socialLinks: { type: [SocialLinkSchema], required: false },
+    comments: { type: String, required: false },
+  },
+  { timestamps: true },
+);
 
 const FreelancerInfo = mongoose.model('FreelancerInfo', FreelancerInfoSchema);
 

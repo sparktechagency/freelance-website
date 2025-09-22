@@ -21,6 +21,7 @@ export interface TUserCreate {
   language: [string];
   isAvailable: boolean;
   isVarified: boolean;
+  isSupported: boolean;
   dailyRate: number;
   aboutCompany: string;
   companyName: string;

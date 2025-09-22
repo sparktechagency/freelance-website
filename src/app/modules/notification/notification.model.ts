@@ -15,7 +15,7 @@ const NotificationSchema = new Schema<TNotification>(
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
+      enum: ['freelancer', 'client', 'admin'],
       required: false,
     },
     type: {

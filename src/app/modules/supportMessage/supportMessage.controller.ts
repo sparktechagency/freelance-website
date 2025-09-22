@@ -23,16 +23,17 @@ const getMyChatList = catchAsync(async (req, res) => {
   const query = req.query;
   const userId = req.user.userId;
   const result = await supportmessageService.getMyChatList(userId, query);
+  // console.log('controller result ==', result);
   sendResponse(res, {
     statusCode: 200,
     success: true,
-    message: 'Chat retrieved successfully',
+    message: 'Support Chat retrieved successfully',
     data: result,
   });
 });
 
 const createMessages = catchAsync(async (req, res) => {
-  console.log('hit hoise');
+  // console.log('hit hoise');
   req.body.sender = req.user.userId;
 
   const updateFiles = req.files as {
@@ -43,7 +44,7 @@ const createMessages = catchAsync(async (req, res) => {
     req.body.image = updateFiles?.image[0]?.path?.replace(/^public[\\/]/, '');
   }
 
-  console.log('req.body===ssssss', req.body);
+  // console.log('req.body===ssssss', req.body);
 
   const result = await supportmessageService.createMessages(req.body);
 

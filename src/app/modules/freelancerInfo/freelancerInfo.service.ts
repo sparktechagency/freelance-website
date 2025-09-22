@@ -32,7 +32,7 @@ const updateSingleFreelancerinfoQuery = async (
       const updateResult = await FreelancerInfo.findByIdAndUpdate(
         freelancer.freelancerId,
         {
-          [field]: fieldArray, 
+          [field]: fieldArray,
         },
         { new: true },
       );
@@ -44,6 +44,23 @@ const updateSingleFreelancerinfoQuery = async (
       return updateResult;
     }
   };
+
+  const updateComments = async (comments: any) => {
+    const updateResult = await FreelancerInfo.findByIdAndUpdate(
+      freelancer.freelancerId,
+      {
+        comments: comments,
+      },
+      { new: true },
+    );
+
+    if (!updateResult) {
+      throw new AppError(403, 'Freelancer info update failed!');
+    }
+
+    return updateResult;
+
+  }
 
   if (payload.type === 'education') {
     console.log('Updating education');
@@ -58,6 +75,14 @@ const updateSingleFreelancerinfoQuery = async (
   if (payload.type === 'experience') {
     console.log('Updating experience');
     return updateField('experience', 'companyName');
+  }
+  if (payload.type === 'socialLink') {
+    console.log('Updating socialLink');
+    return updateField('socialLinks', 'socialLink');
+  }
+  if (payload.type === 'comments') {
+    console.log('Updating socialLink');
+    return updateComments(payload.comments);
   }
 
   throw new AppError(400, 'Invalid payload type!');

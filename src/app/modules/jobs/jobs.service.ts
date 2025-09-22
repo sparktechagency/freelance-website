@@ -5,6 +5,7 @@ import { IJobs } from './jobs.interface';
 import { Jobs } from './jobs.model';
 import { Category } from '../category/category.model';
 import { ServiceType } from '../serviceType/serviceType.model';
+import { notificationService } from '../notification/notification.service';
 
 const createJobs = async (payload: IJobs) => {
   const category = await Category.findById(payload.categoryId);
@@ -18,6 +19,14 @@ const createJobs = async (payload: IJobs) => {
   }
   payload.serviceTypeName = serviceType.name;
   const result = await Jobs.create(payload);
+  const notificationData = {
+    userId: result.userId,
+    message: `New job has been created by ${payload.title}`,
+    type: 'success',
+    role: 'client',
+  };
+
+  await notificationService.createNotification(notificationData);
   return result;
 };
 
@@ -32,7 +41,9 @@ const getAllCreateJobsQuery = async (query: Record<string, unknown>) => {
     .paginate()
     .fields();
 
-  const result = await ServicecreateJobsQuery.modelQuery;
+    
+    const result = await ServicecreateJobsQuery.modelQuery;
+    console.log('result', result);
   const meta = await ServicecreateJobsQuery.countTotal();
   return { meta, result };
 };

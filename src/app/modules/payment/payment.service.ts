@@ -863,54 +863,6 @@ const createCheckout = async (userId: any, payload: any) => {
 };
 
 
-const createCheckoutByRenew = async (userId: any, payload: any) => {
-  console.log('stripe payment', payload);
-  let session = {} as { id: string };
-
- 
-
-  const lineItems = [
-    {
-      price_data: {
-        currency: 'usd',
-        product_data: {
-          name: 'Amount',
-        },
-        unit_amount: Math.round(payload.amount * 100),
-      },
-      quantity: 1,
-    },
-  ];
-
-  const sessionData: any = {
-    payment_method_types: ['card'],
-    mode: 'payment',
-    success_url: config.stripe.stripe_payment_success_url,
-    cancel_url: config.stripe.stripe_payment_cancel_url,
-    line_items: lineItems,
-    metadata: {
-      userId: String(userId),
-      subscriptionId: String(payload.subscriptionId),
-    },
-  };
-
-  console.log('sessionData=', sessionData);
-
-  try {
-    console.log('try session');
-    session = await stripe.checkout.sessions.create(sessionData);
-  } catch (error) {
-    console.log('Error', error);
-  }
-
-  console.log('try session 22');
-  const { id: session_id, url }: any = session || {};
-
-  console.log({ url });
-
-  return { url };
-};
-
 const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -1122,7 +1074,17 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
                { session },
              );
            }
+           
+           if (purchestPackage?.isSupport) {
+             await User.findByIdAndUpdate(
+               userId,
+               { isSupported: true },
+               { session },
+             );
+           }
         }
+
+
 
         const user = await User.findById(userId);
         if (!user) {
@@ -1490,7 +1452,6 @@ export const paymentService = {
   getFreelancerClientsCountryRegion,
   getAllIncomeRatiobyDays,
   createCheckout,
-  createCheckoutByRenew,
   automaticCompletePayment,
   getAllEarningRatio,
   //   paymentRefundService,

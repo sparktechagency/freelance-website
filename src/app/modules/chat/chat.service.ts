@@ -300,7 +300,7 @@ const getMyChatList = async (
       ],
     }).populate({
       path: 'participants',
-      select: 'fullName email image role _id phone',
+      select: 'fullName email profile role _id phone',
       match: { _id: { $ne: userId } },
     });
   } else {
@@ -309,32 +309,32 @@ const getMyChatList = async (
       deletedByUsers: { $ne: userId },
     }).populate({
       path: 'participants',
-      select: 'fullName email image role _id phone',
+      select: 'fullName email profile role _id phone',
       match: { _id: { $ne: userId } },
     });
   }
 
-  console.log('chats==', chats);
 
   if (!chats) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Chat list not found');
   }
 
+  console.log('chats==', chats);
+
   const data = [];
   for (const chatItem of chats) {
+    console.log('chatItem==', chatItem);
     const chatId = chatItem?._id;
     const message: any = await Message.findOne({ chatId: chatId }).sort({
       updatedAt: -1,
     });
 
-    console.log('message', message);
 
     const unreadMessageCount = await Message.countDocuments({
       chatId: chatId,
       seen: false,
       sender: { $ne: userId },
     });
-    console.log('unreadMessageCount', unreadMessageCount);
 
     // if (message) {
     //   data.push({ chat: chatItem, message: message, unreadMessageCount });
@@ -356,6 +356,7 @@ const getMyChatList = async (
       __v: '',
     };
 
+
     data.push({
       chat: chatItem,
       message: message ? message : defaultMessage,
@@ -367,9 +368,7 @@ const getMyChatList = async (
     const dateB = (b.message && b.message.createdAt) || 0;
     return dateB - dateA;
   });
-  console.log('data.length', data.length);
 
-  console.log('data', data);
 
   // Separate pinned and unpinned
   const pinned = data.filter((item) => item.chat.isPinned === true);
