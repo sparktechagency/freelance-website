@@ -8,11 +8,11 @@ const {userId} = req.user;
   const payload = req.body;
   payload.userId = userId;
 
-  // const imageFiles = req.files as {
-  //   [fieldname: string]: Express.Multer.File[];
-  // };
+  const imageFiles = req.files as {
+    [fieldname: string]: Express.Multer.File[];
+  };
 
-  const result = await postService.createPost( payload);
+  const result = await postService.createPost(imageFiles, payload);
 
   sendResponse(res, {
     success: true,
@@ -22,48 +22,48 @@ const {userId} = req.user;
   });
 });
 
-const createPostLike = catchAsync(async (req, res) => {
-  const { userId } = req.user;
-  const {id} = req.params;
+// const createPostLike = catchAsync(async (req, res) => {
+//   const { userId } = req.user;
+//   const {id} = req.params;
 
-  // const imageFiles = req.files as {
-  //   [fieldname: string]: Express.Multer.File[];
-  // };
+//   // const imageFiles = req.files as {
+//   //   [fieldname: string]: Express.Multer.File[];
+//   // };
 
-  const result = await postService.createPostLike(id, userId);
+//   const result = await postService.createPostLike(id, userId);
 
-  sendResponse(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    data: result,
-    message: 'Post like successful!!',
-  });
-});
+//   sendResponse(res, {
+//     success: true,
+//     statusCode: httpStatus.OK,
+//     data: result,
+//     message: 'Post like successful!!',
+//   });
+// });
 
 
-const createPostHighlight = catchAsync(async (req, res) => {
-  const { userId } = req.user;
-  const { id } = req.params;
+// const createPostHighlight = catchAsync(async (req, res) => {
+//   const { userId } = req.user;
+//   const { id } = req.params;
 
-  // const imageFiles = req.files as {
-  //   [fieldname: string]: Express.Multer.File[];
-  // };
+//   // const imageFiles = req.files as {
+//   //   [fieldname: string]: Express.Multer.File[];
+//   // };
 
-  const result = await postService.createPostHighlight(id, userId);
+//   const result = await postService.createPostHighlight(id, userId);
 
-  sendResponse(res, {
-    success: true,
-    statusCode: httpStatus.OK,
-    data: result,
-    message: 'Post highlight successful!!',
-  });
-});
+//   sendResponse(res, {
+//     success: true,
+//     statusCode: httpStatus.OK,
+//     data: result,
+//     message: 'Post highlight successful!!',
+//   });
+// });
 
 const getAllPost = catchAsync(async (req, res) => {
-  // const { userId } = req.user;
+  const { userId } = req.user;
   const { meta, result } = await postService.getAllPostQuery(
     req.query,
-    // userId,
+    userId,
   );
 
   sendResponse(res, {
@@ -95,9 +95,11 @@ const updateSinglePost = catchAsync(async (req, res) => {
   const imageFiles = req.files as {
     [fieldname: string]: Express.Multer.File[];
   };
+  console.log('imageFiles', imageFiles);
 
   const result = await postService.updateSinglePostQuery(
     id,
+    imageFiles,
     payload,
   );
 
@@ -110,7 +112,9 @@ const updateSinglePost = catchAsync(async (req, res) => {
 });
 
 const deleteSinglePost = catchAsync(async (req, res) => {
-  const result = await postService.deletedPostQuery(req.params.id);
+  console.log('req.params.id', req.params.id);
+  const { userId } = req.user;
+  const result = await postService.deletedPostQuery(req.params.id, userId);
 
   sendResponse(res, {
     success: true,
@@ -122,8 +126,8 @@ const deleteSinglePost = catchAsync(async (req, res) => {
 
 export const postController = {
   createPost,
-  createPostLike,
-  createPostHighlight,
+  // createPostLike,
+  // createPostHighlight,
   getAllPost,
   getSinglePost,
   updateSinglePost,

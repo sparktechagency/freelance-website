@@ -36,17 +36,45 @@ const createInvoice = async (payload: TInvoices) => {
     throw new AppError(403, 'Stripe account not completed!!');
   }
 
-  const runningSubscription = await Subscription.findOne({
+  // const runningSubscription = await Subscription.findOne({
+  //   userId: payload.freelancerUserId,
+  //   isDeleted: false,
+  //   endDate: { $gt: new Date() },
+  //   type: ['monthly', 'yearly'],
+  //   $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
+  // });
+
+  // if (!runningSubscription) {
+  //   throw new AppError(403, 'Running subscription not found!!');
+  // }
+
+  const runningSubscriptionByEndDate = await Subscription.findOne({
     userId: payload.freelancerUserId,
     isDeleted: false,
     endDate: { $gt: new Date() },
     type: ['monthly', 'yearly'],
+    // $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
+  });
+
+  const runningSubscriptionByVideoCount = await Subscription.findOne({
+    userId: payload.freelancerUserId,
+    isDeleted: false,
+    // endDate: { $gt: new Date() },
+    type: ['monthly', 'yearly'],
     $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
   });
 
-  if (!runningSubscription) {
-    throw new AppError(403, 'Running subscription not found!!');
+  if (!runningSubscriptionByEndDate) {
+    throw new AppError(403, 'Your subscription is not active!');
   }
+
+  if (!runningSubscriptionByVideoCount) {
+    throw new AppError(
+      403,
+      'Your subscription is active! but your tender limit is over!',
+    );
+  }
+
 
   if (payload.invoiceType === 'tender') {
     if (!payload.tenderId) {
@@ -104,126 +132,6 @@ const createInvoice = async (payload: TInvoices) => {
   }
   return result;
 };
-
-// const createInvoiceChatBoot = async (prompt: string) => {
-//   console.log('API hit!');
-
-//   const ai = new GoogleGenAI({
-//     apiKey: config.ai_info.ai_gemini_token,
-//   });
-
-//   try {
-//     const response = await ai.models.generateContent({
-//       model: 'gemini-2.5-flash',
-//       contents: prompt
-//     });
-
-//     // console.log('Response:', response);
-//     // console.log('Generated text:', response.text);
-
-//     const generatedText = response.text;
-
-//       if (generatedText) {
-//         const chunks = generatedText.split('\n\n'); 
-
-//         let index = 0;
-
-//         const processNextChunk = () => {
-//           if (index < chunks.length) {
-//             const chunk = chunks[index].trim();
-//             console.log('Chunk received:', chunk);
-
-//             index++;
-//             setTimeout(processNextChunk, 1000); 
-//           }
-//         };
-
-//         processNextChunk();
-//       } else {
-//         console.log('No content generated');
-//       }
-
-
-//     return response.text;
-//   } catch (error) {
-//     console.error('Error:', error);
-//   }
-// };
-
-
-const createInvoiceChatBoot = async (prompt: string): Promise<string[]> => {
-  console.log('API hit!');
-
-  // const ai = new GoogleGenAI({
-  //   apiKey: config.ai_info.ai_gemini_token,
-  // });
-
-  // try {
-  //   const response = await ai.models.generateContent({
-  //     model: 'gemini-2.5-flash',
-  //     contents: prompt,
-  //   });
-
-
-  //   const generatedText = response.text;
-
-  //   return generatedText ? generatedText.split('\n\n') : [];
-  // } catch (error) {
-  //   console.error('Error:', error);
-  //   return []; 
-  // }
-
-  return [];
-};
-
-
-
-
-// const createInvoiceChatBoot = async (prompt: string): Promise<string[]> => {
-//   console.log('API hit!');
-
-//   const ai = new GoogleGenAI({
-//     apiKey: config.ai_info.ai_gemini_token,
-//   });
-
-//   try {
-//     const response = await ai.models.generateContent({
-//       model: 'gemini-2.5-flash',
-//       contents: prompt,
-//     });
-
-//     // Extract the generated content
-//     const generatedText = response.text;
-
-//     if (generatedText) {
-//       const chunks = generatedText.split('\n\n'); // Split by paragraphs
-//       const resultChunks: string[] = [];
-
-//       // Function to simulate delay between chunks
-//       const delay = (ms: number) =>
-//         new Promise((resolve) => setTimeout(resolve, ms));
-
-//       // Process chunks one by one
-//       for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-//         const chunk = chunks[chunkIndex].trim(); // Get the current chunk
-//         resultChunks.push(chunk); // Add chunk to result array
-//         console.log('Chunk:', chunk); // Log the chunk
-
-//         // Simulate a delay between each chunk
-//         await delay(1000); // Delay of 1 second before processing next chunk
-//       }
-
-//       // Return all accumulated chunks
-//       return resultChunks;
-//     } else {
-//       console.log('No content generated');
-//       return []; // Return an empty array if no content is generated
-//     }
-//   } catch (error) {
-//     console.error('Error:', error);
-//     return []; // Return an empty array in case of error
-//   }
-// };
 
 
 const getAllInvoiceByClientQuery = async (
@@ -526,7 +434,6 @@ const deletedInvoiceQuery = async (id: string) => {
 
 export const invoiceService = {
   createInvoice,
-  createInvoiceChatBoot,
   getAllInvoiceByClientQuery,
   getAllInvoices,
   getAllInvoiceByFreelancerQuery,

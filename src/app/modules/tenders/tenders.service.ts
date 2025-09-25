@@ -30,24 +30,36 @@ const createTender = async (payload: ITenders) => {
      throw new AppError(403, "You don't have a subscription!");
    }
 
-  const runningSubscription = await Subscription.findOne({
+  const runningSubscriptionByEndDate = await Subscription.findOne({
     userId: payload.userId,
     isDeleted: false,
     endDate: { $gt: new Date() },
     type: ['monthly', 'yearly'],
+    // $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
+  });
+
+  const runningSubscriptionByVideoCount = await Subscription.findOne({
+    userId: payload.userId,
+    isDeleted: false,
+    // endDate: { $gt: new Date() },
+    type: ['monthly', 'yearly'],
     $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
   });
 
-  if (!runningSubscription) {
+  if (!runningSubscriptionByEndDate) {
     throw new AppError(403, 'Your subscription is not active!');
+  }
+
+  if (!runningSubscriptionByVideoCount) {
+    throw new AppError(403, 'Your subscription is active! but your tender limit is over!');
   }
 
   const result = await Tender.create(payload);
 
   if(result){
-    if(runningSubscription.type === "monthly"){
-      runningSubscription.takeTenderCount += 1;
-      await runningSubscription.save();
+    if (runningSubscriptionByEndDate.type === 'monthly') {
+      runningSubscriptionByEndDate.takeTenderCount += 1;
+      await runningSubscriptionByEndDate.save();
     }
   }
 

@@ -15,11 +15,6 @@ invoicesRouter
     invoiceController.createInvoice,
   )
   .post(
-    '/chatboot',
-    // auth(USER_ROLE.FREELANCER),
-    invoiceController.createInvoiceChatBoot,
-  )
-  .post(
     '/invoice-approve/:id',
     auth(USER_ROLE.CLIENT),
     invoiceController.invoiceApprove,

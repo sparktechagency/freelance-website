@@ -11,33 +11,29 @@ const uploads = fileUpload('./public/uploads/post');
 postRouter
   .post(
     '/create-post',
-     auth(USER_ROLE.USER),
-    // uploads.fields([{ name: 'image', maxCount: 1 }]),
+    auth(USER_ROLE.CLIENT),
+    uploads.fields([{ name: 'image', maxCount: 1 }]),
     postController.createPost,
   )
-  .post(
-    '/like/:id',
-     auth(USER_ROLE.USER),
-    // uploads.fields([{ name: 'image', maxCount: 1 }]),
-    postController.createPostLike,
-  )
-  .post(
-    '/highlight/:id',
-     auth(USER_ROLE.DOCTOR),
-    // uploads.fields([{ name: 'image', maxCount: 1 }]),
-    postController.createPostHighlight,
-  )
-  .get('/',  postController.getAllPost)
-  .get('/:id',  postController.getSinglePost)
-  .patch(
-    '/:id',
-    //  auth(USER_ROLE.ADMIN),
-    postController.updateSinglePost,
-  )
-  
+  // .post(
+  //   '/like/:id',
+  //    auth(USER_ROLE.USER),
+  //   // uploads.fields([{ name: 'image', maxCount: 1 }]),
+  //   postController.createPostLike,
+  // )
+  // .post(
+  //   '/highlight/:id',
+  //    auth(USER_ROLE.DOCTOR),
+  //   // uploads.fields([{ name: 'image', maxCount: 1 }]),
+  //   postController.createPostHighlight,
+  // )
+  .get('/me', auth(USER_ROLE.CLIENT), postController.getAllPost)
+  .get('/:id', postController.getSinglePost)
+  .patch('/:id', auth(USER_ROLE.CLIENT), uploads.fields([{ name: 'image', maxCount: 1 }]), postController.updateSinglePost)
+
   .delete(
     '/:id',
-    // auth(USER_ROLE.ADMIN, USER_ROLE.SUB_ADMIN),
+    auth(USER_ROLE.CLIENT),
     postController.deleteSinglePost,
   );
 

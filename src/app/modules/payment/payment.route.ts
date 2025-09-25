@@ -18,7 +18,7 @@ paymentRouter
   )
   .post(
     '/subscription-renewal/:id',
-    auth(USER_ROLE.FREELANCER),
+    auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
     paymentController.subscriptionRenewal,
   )
   .get('/success', paymentController.successPage)

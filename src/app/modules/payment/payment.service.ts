@@ -85,6 +85,10 @@ const subscriptionRenewal = async (userId: string, subscriptionId: string) => {
       throw new AppError(httpStatus.BAD_REQUEST, 'Subscription not found');
     }
 
+    if(subscription.userId.toString() !== userId.toString()){
+      throw new AppError(httpStatus.BAD_REQUEST, 'You are not authorized to renew this subscription');
+    }
+
     const existingRunningSubscription = await Subscription.findOne({
       userId: userId,
       type: subscription.type,

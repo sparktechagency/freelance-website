@@ -12,7 +12,7 @@ const upload = fileUpload('./public/uploads/subscription');
 subcriptionRouter
   .post(
     '/create-subscription',
-    auth(USER_ROLE.CLIENT),
+    auth(USER_ROLE.CLIENT, USER_ROLE.FREELANCER),
     // upload.fields([{ name: 'image', maxCount: 1 }]),
     subscriptionController.createSubscription,
   )

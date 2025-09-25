@@ -157,6 +157,7 @@ const getAllMysubscriptionQuery = async (query: Record<string, unknown>, userId:
     const result = await Subscription.findOne({
       userId: userId,
       isDeleted: false,
+      status: 'running',
       endDate: { $gt: new Date() },
       type: ['monthly', 'yearly'],
       $expr: { $lt: ['$takeTenderCount', '$tenderCount'] },
@@ -172,6 +173,7 @@ const getAllMysubscriptionQuery = async (query: Record<string, unknown>, userId:
       Subscription.find({
         userId: userId,
         isDeleted: false,
+        status: ['running', 'completed'],
       })
         .populate('packageId')
         .populate('userId'),

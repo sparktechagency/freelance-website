@@ -8,7 +8,7 @@ const userSchema = new Schema<TUser>(
   {
     profile: {
       type: String,
-      default: `http://${config.ip}:${config.port}/uploads/profile/default-user.jpg`,
+      default: `uploads/profile/default-user.jpg`,
     },
     fullName: {
       type: String,

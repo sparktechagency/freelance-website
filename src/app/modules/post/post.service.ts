@@ -8,21 +8,14 @@ import { TPost } from './post.interface';
 import Post from './post.model';
 import { Types } from 'mongoose';
 
-const createPost = async ( payload: TPost) => {
+const createPost = async (files: any, payload: TPost) => {
   try {
-    // if (files.image && files.image.length > 0) {
-    //   const image: any = await uploadToS3({
-    //     file: files.image[0],
-    //     fileName: files.image[0].originalname,
-    //     folder: 'AcreatePosts/',
-    //   });
-    //   payload.image = image;
-    // }
+    
 
-    // if (files.image && files.image.length > 0) {
-    //   const image: any = files.image[0].path.replace(/^public[\\/]/, '');
-    //   payload.image = image;
-    // }
+    if (files.image && files.image.length > 0) {
+      const image: any = files.image[0].path.replace(/^public[\\/]/, '');
+      payload.image = image;
+    }
 
     const result = await Post.create(payload);
 
@@ -32,104 +25,85 @@ const createPost = async ( payload: TPost) => {
     // }
     return result;
   } catch (error) {
-    // try {
-    //   const fileDeletePath = `${files.image[0].path}`;
-    //   await unlink(fileDeletePath);
-    // } catch (fsError) {
-    //   console.error('Error accessing or deleting the image file:', fsError);
-    // }
+    try {
+      const fileDeletePath = `${files.image[0].path}`;
+      await unlink(fileDeletePath);
+    } catch (fsError) {
+      console.error('Error accessing or deleting the image file:', fsError);
+    }
     throw error;
   }
 };
 
 
-const createPostLike = async (postId: string, userId: string) => {
+// const createPostLike = async (postId: string, userId: string) => {
 
-  const post = await Post.findById(postId);
+//   const post = await Post.findById(postId);
 
-  if (!post) {
-    throw new AppError(404, 'Post not found!');
-  }
+//   if (!post) {
+//     throw new AppError(404, 'Post not found!');
+//   }
 
   
-    const userObjectId = new Types.ObjectId(userId);
-    const isAlreadyLiked = post.likes.includes(userObjectId);
+//     const userObjectId = new Types.ObjectId(userId);
+//     const isAlreadyLiked = post.likes.includes(userObjectId);
   
-    if (isAlreadyLiked) {
-      await Post.updateOne(
-        { _id: post._id },
-        { $pull: { likes: userId } },
-      );
-       await Post.findByIdAndUpdate(postId, { $inc: { likesCount: -1 } });
-      console.log(`User ${userId} removed their like from the comment.`);
-    } else {
-      await Post.updateOne(
-        { _id: post._id },
-        { $push: { likes: userId } },
-      );
-      await Post.findByIdAndUpdate(postId, { $inc: { likesCount: 1 } });
-      console.log(`User ${userId} liked the comment.`);
-    }
-};
+//     if (isAlreadyLiked) {
+//       await Post.updateOne(
+//         { _id: post._id },
+//         { $pull: { likes: userId } },
+//       );
+//        await Post.findByIdAndUpdate(postId, { $inc: { likesCount: -1 } });
+//       console.log(`User ${userId} removed their like from the comment.`);
+//     } else {
+//       await Post.updateOne(
+//         { _id: post._id },
+//         { $push: { likes: userId } },
+//       );
+//       await Post.findByIdAndUpdate(postId, { $inc: { likesCount: 1 } });
+//       console.log(`User ${userId} liked the comment.`);
+//     }
+// };
 
 
-const createPostHighlight = async (postId: string, doctorId: string) => {
-  const post = await Post.findById(postId);
+// const createPostHighlight = async (postId: string, doctorId: string) => {
+//   const post = await Post.findById(postId);
 
-  if (!post) {
-    throw new AppError(404, 'Post not found!');
-  }
+//   if (!post) {
+//     throw new AppError(404, 'Post not found!');
+//   }
 
-  const userObjectId = new Types.ObjectId(doctorId);
-  const isAlreadyHighlight = post.highlights.includes(userObjectId);
+//   const userObjectId = new Types.ObjectId(doctorId);
+//   const isAlreadyHighlight = post.highlights.includes(userObjectId);
 
-  if (isAlreadyHighlight) {
-    await Post.updateOne(
-      { _id: post._id },
-      { $pull: { highlights: doctorId } },
-    );
-    await Post.findByIdAndUpdate(postId, { $inc: { highlightsCount: -1 } });
-    console.log(`User ${doctorId} removed their like from the comment.`);
-  } else {
-    await Post.updateOne(
-      { _id: post._id },
-      { $push: { highlights: doctorId } },
-    );
-    await Post.findByIdAndUpdate(postId, { $inc: { highlightsCount: 1 } });
-    console.log(`User ${doctorId} liked the comment.`);
-  }
-};
+//   if (isAlreadyHighlight) {
+//     await Post.updateOne(
+//       { _id: post._id },
+//       { $pull: { highlights: doctorId } },
+//     );
+//     await Post.findByIdAndUpdate(postId, { $inc: { highlightsCount: -1 } });
+//     console.log(`User ${doctorId} removed their like from the comment.`);
+//   } else {
+//     await Post.updateOne(
+//       { _id: post._id },
+//       { $push: { highlights: doctorId } },
+//     );
+//     await Post.findByIdAndUpdate(postId, { $inc: { highlightsCount: 1 } });
+//     console.log(`User ${doctorId} liked the comment.`);
+//   }
+// };
+
+
 
 const getAllPostQuery = async (
   query: Record<string, unknown>,
-  // userId: string,
+  userId: string,
 ) => {
   console.log('query=', query);
-Object.keys(query).forEach((key) => {
-  if (query[key] === 'true') query[key] = true;
-  if (query[key] === 'false') query[key] = false;
-});
-  // query = JSON.parse(query.recent);
-  console.log('query=end', query);
 
-  let filter: Record<string, unknown> = { isDeleted: false };
-  if (query.recent) {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    filter.createdAt = { $gte: startOfToday };
-     delete query.recent;
-  } else if (query.highlight) {
-    filter.highlightsCount = { $gt: 0 };
-     delete query.highlight;
-  } else if (query.popular) {
-    query.limit = 10; 
-    query.sort = '-likesCount -highlightsCount -commentsCount';
-    delete query.popular;
-  }
 
-  console.log('filter=', filter);
   const AcreatePostQuery = new QueryBuilder(
-    Post.find(filter).populate({
+    Post.find({userId, isDeleted: false}).populate({
       path: 'userId',
       select: 'profile fullName email role address',
     }),
@@ -251,7 +225,7 @@ const getSinglePostQuery = async (id: string, ) => {
 
 const updateSinglePostQuery = async (
   id: string,
-  // files: any,
+  files: any,
   payload: any,
 ) => {
   try {
@@ -267,57 +241,30 @@ const updateSinglePostQuery = async (
       throw new AppError(404, 'AcreatePost not found!');
     }
 
-    // if (files?.image && files?.image.length > 0) {
-    //   // const image: any = await uploadToS3({
-    //   //   file: files.image[0],
-    //   //   fileName: files.image[0].originalname,
-    //   //   folder: 'AcreatePosts/',
-    //   // });
-    //   //  payload.image = image;
+    if (files.image && files.image.length > 0) {
+      const image: any = files.image[0].path.replace(/^public[\\/]/, '');
+      payload.image = image;
+    }
 
-    //   const image: any = files.image[0].path.replace(/^public[\\/]/, '');
-    //   payload.image = image;
-
-    //   const result = await Post.findByIdAndUpdate(id, payload, {
-    //     new: true,
-    //   });
-    //   // if (result) {
-    //   //   const fileDeletePath = `${files.image[0].path}`;
-    //   //   await unlink(fileDeletePath);
-    //   // }
-
-    //   // const key = existingAcreatePost.image.split('amazonaws.com/')[1];
-
-    //   // const deleteImage: any = await deleteFromS3(key);
-    //   // console.log('deleteImage', deleteImage);
-    //   // if (!deleteImage) {
-    //   //   throw new AppError(404, 'Blog Image Deleted File !');
-    //   // }
-
-    //   return result;
-    // } else {
-    //   const result = await Post.findByIdAndUpdate(id, payload, {
-    //     new: true,
-    //   });
-    //   return result;
-    // }
-
-    const result = await Post.findByIdAndUpdate(id, payload, {
-      new: true,
-    });
+      const result = await Post.findByIdAndUpdate(id, payload, {
+        new: true,
+      });
+     
+   
     return result;
   } catch (error) {
-    // try {
-    //   const fileDeletePath = `${files.image[0].path}`;
-    //   await unlink(fileDeletePath);
-    // } catch (fsError) {
-    //   console.error('Error accessing or deleting the image file:', fsError);
-    // }
+    try {
+      const fileDeletePath = `${files.image[0].path}`;
+      await unlink(fileDeletePath);
+    } catch (fsError) {
+      console.error('Error accessing or deleting the image file:', fsError);
+    }
     throw error;
   }
 };
 
-const deletedPostQuery = async (id: string) => {
+const deletedPostQuery = async (id: string, userId: string) => {
+  console.log('dele');
   if (!id) {
     throw new AppError(400, 'Invalid input parameters');
   }
@@ -327,6 +274,9 @@ const deletedPostQuery = async (id: string) => {
   });
   if (!existingPost) {
     throw new AppError(404, 'Post not found!');
+  }
+  if (existingPost.userId.toString() !== userId) {
+    throw new AppError(404, 'You are not authorized to delete this Post!');
   }
 
   const result = await Post.findByIdAndUpdate(
@@ -343,8 +293,8 @@ const deletedPostQuery = async (id: string) => {
 
 export const postService = {
   createPost,
-  createPostLike,
-  createPostHighlight,
+  // createPostLike,
+  // createPostHighlight,
   getAllPostQuery,
   getSinglePostQuery,
   updateSinglePostQuery,
