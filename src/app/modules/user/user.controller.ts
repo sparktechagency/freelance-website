@@ -134,7 +134,8 @@ const getMyProfile = catchAsync(async (req: Request, res: Response) => {
   });
 });
 const getAllFreelancers = catchAsync(async (req: Request, res: Response) => {
-  const result = await userService.getAllFreelancers();
+  
+  const result = await userService.getAllFreelancers(req.query);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -144,8 +145,21 @@ const getAllFreelancers = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateMyProfile = catchAsync(async (req: Request, res: Response) => {
-  if (req?.file) {
-    req.body.profile = storeFile('profile', req?.file?.filename);
+  // if (req?.file) {
+  //   req.body.profile = storeFile('profile', req?.file?[0]);
+  // }
+  const imageFiles = req.files as {
+    [fieldname: string]: Express.Multer.File[];
+  };
+
+  if (imageFiles.profile && imageFiles.profile.length > 0) {
+    req.body.profile = imageFiles.profile[0].path.replace(/^public[\\/]/, '');
+  }
+  if (imageFiles.coverPhoto && imageFiles.coverPhoto.length > 0) {
+    req.body.coverPhoto = imageFiles.coverPhoto[0].path.replace(
+      /^public[\\/]/,
+      '',
+    );
   }
 
   const result = await userService.updateUser(req?.user?.userId, req.body);

@@ -404,7 +404,7 @@ const updateUser = async (id: string, payload: Partial<TUser>) => {
   console.log('payload=', payload);
   const { role, email, ...rest } = payload;
   console.log('rest', rest);
-  rest.profile = imageUrlGenarate(rest.profile as string);
+  // rest.profile = imageUrlGenarate(rest.profile as string);
 
   const user = await User.findByIdAndUpdate(id, rest, { new: true });
 
@@ -497,9 +497,21 @@ const getUserById = async (id: string) => {
   return result;
 };
 
-const getAllFreelancers = async () => {
-  const result = await User.find({ role: 'freelancer' }).populate('freelancerId');
-  return result;
+const getAllFreelancers = async (query: Record<string, unknown>) => {
+  console.log('query', query);
+  if(query.freelancer === "top"){
+      const result = await User.find({ role: 'freelancer' })
+        .populate('freelancerId')
+        .sort({ jobsDone: -1 }).limit(30);
+      return result;
+
+  }else{
+      const result = await User.find({ role: 'freelancer' }).populate(
+        'freelancerId',
+      );
+      return result;
+  }
+
   
 };
 

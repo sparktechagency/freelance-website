@@ -10,6 +10,10 @@ const userSchema = new Schema<TUser>(
       type: String,
       default: `uploads/profile/default-user.jpg`,
     },
+    coverPhoto: {
+      type: String,
+      required: false,
+    },
     fullName: {
       type: String,
       required: true,
@@ -103,6 +107,11 @@ const userSchema = new Schema<TUser>(
     companyName: {
       type: String,
       required: false,
+    },
+    jobsDone: {
+      type: Number,
+      required: false,
+      default: 0,
     },
   },
   {

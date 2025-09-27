@@ -25,7 +25,9 @@ export interface TUserCreate {
   dailyRate: number;
   aboutCompany: string;
   companyName: string;
-  companyId:string
+  companyId:string;
+  coverPhoto: string;
+  jobsDone: number;
 }
 
 export interface TUser extends TUserCreate {

@@ -55,6 +55,11 @@ const invoiceSchema = new Schema({
     type: [String],
     required: false,
   },
+  extendDate: {
+    type: Date,
+    required: false,
+    default: null,
+  },
 });
 
 const Invoice = mongoose.model('Invoice', invoiceSchema);

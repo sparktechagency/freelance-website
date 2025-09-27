@@ -19,6 +19,7 @@ invoicesRouter
     auth(USER_ROLE.CLIENT),
     invoiceController.invoiceApprove,
   )
+
   .post(
     '/invoice-delivery/:id',
     auth(USER_ROLE.FREELANCER),
@@ -29,6 +30,16 @@ invoicesRouter
     '/invoice-complete/:id',
     auth(USER_ROLE.CLIENT),
     invoiceController.invoiceComplete,
+  )
+  .post(
+    '/invoice-extend/:id',
+    auth(USER_ROLE.FREELANCER),
+    invoiceController.invoiceExtend,
+  )
+  .post(
+    '/invoice-extend-approve/:id',
+    auth(USER_ROLE.CLIENT),
+    invoiceController.invoiceExtendApprove,
   )
   .get(
     '/',

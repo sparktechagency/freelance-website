@@ -70,7 +70,13 @@ userRoutes
       USER_ROLE.SUB_ADMIN,
       USER_ROLE.SUPER_ADMIN,
     ),
-    upload.single('profile'),
+    // upload.single('profile'),
+    // upload.single('coverPhoto'),
+    // upload.fields({})
+    upload.fields([
+      { name: 'profile', maxCount: 1 },
+      { name: 'coverPhoto', maxCount: 1 },
+    ]),
     parseData(),
     userController.updateMyProfile,
   )

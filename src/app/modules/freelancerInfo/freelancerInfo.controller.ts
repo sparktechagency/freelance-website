@@ -6,11 +6,14 @@ import { freelancerinfoService } from './freelancerInfo.service';
 
 const updateSingleFreelancerinfo = catchAsync(async (req, res) => {
   const { userId } = req.user;
-  const payload = req.body;
+  const data = req.body;
+
+  const { operation, ...payload }: any = data;
 
   const result = await freelancerinfoService.updateSingleFreelancerinfoQuery(
     userId,
     payload,
+    operation,
   );
 
   sendResponse(res, {

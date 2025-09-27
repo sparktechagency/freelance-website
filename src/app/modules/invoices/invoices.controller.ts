@@ -151,6 +151,35 @@ const invoiceComplete = catchAsync(async (req, res) => {
   });
 });
 
+const invoiceExtend = catchAsync(async (req, res) => {
+  const { userId } = req.user;
+  const { id } = req.params;
+  const extendDate = req.body.extendDate;
+
+  const result = await invoiceService.invoiceExtend(userId, id, extendDate);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Invoice Extend are successful!!',
+  });
+});
+
+const invoiceExtendApprove = catchAsync(async (req, res) => {
+  const { userId } = req.user;
+  const { id } = req.params;
+
+  const result = await invoiceService.invoiceExtendApprove(userId, id,);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Invoice Extend Approve are successful!!',
+  });
+});
+
 const deleteSingleInvoice = catchAsync(async (req, res) => {
   const result = await invoiceService.deletedInvoiceQuery(req.params.id);
 
@@ -170,6 +199,8 @@ export const invoiceController = {
   invoiceApprove,
   invoiceDelivery,
   invoiceComplete,
+  invoiceExtend,
+  invoiceExtendApprove,
   getSingleInvoice,
   updateSingleInvoice,
   deleteSingleInvoice,

@@ -398,6 +398,15 @@ const invoiceComplete = async (clientUserId: string, id: string) => {
     throw new AppError(404, 'Freelancer Not Found!!');
   }
 
+  const updateFreelancerDetails = await User.findByIdAndUpdate(
+    freelancerUser._id,
+    {
+      $inc:{
+        jobsDone: 1
+      }
+    },
+  );
+
   const stripeConnectedAccount = await StripeAccount.findOne({
     userId: freelancerUser._id,
     isCompleted: true,
@@ -411,6 +420,82 @@ const invoiceComplete = async (clientUserId: string, id: string) => {
     stripeConnectedAccount.accountId,
     transaction.transferAmount,
   );
+
+  return result;
+};
+
+
+const invoiceExtend = async (freelancerUserId: string, id: string, extendDate: Date) => {
+  const freelancer = await User.findById(freelancerUserId);
+  if (!freelancer) {
+    throw new AppError(404, 'Freelancer Not Found!!');
+  }
+  if (!id) {
+    throw new AppError(400, 'Invalid input parameters');
+  }
+  const invoice = await Invoice.findById({
+    _id: id,
+    clientUserId: freelancerUserId,
+  });
+  if (!invoice) {
+    throw new AppError(404, 'Invoice Not Found!!');
+  }
+  if (invoice.status === 'completed') {
+    throw new AppError(404, 'Invoice already completed!!');
+  }
+  if (invoice.status === 'delivered') {
+    throw new AppError(404, 'Invoice already delivered!!');
+  }
+
+  const result = await Invoice.findByIdAndUpdate(
+    id,
+    {
+      extendDate: extendDate,
+    },
+    { new: true },
+  );
+  if (!result) {
+    throw new AppError(404, 'Invoice Result Not Found !');
+  }
+
+  return result;
+};
+const invoiceExtendApprove = async (
+  clientUserId: string,
+  id: string,
+) => {
+  const freelancer = await User.findById(clientUserId);
+  if (!freelancer) {
+    throw new AppError(404, 'Freelancer Not Found!!');
+  }
+  if (!id) {
+    throw new AppError(400, 'Invalid input parameters');
+  }
+  const invoice = await Invoice.findById({
+    _id: id,
+    clientUserId: clientUserId,
+  });
+  if (!invoice) {
+    throw new AppError(404, 'Invoice Not Found!!');
+  }
+  if (invoice.status === 'completed') {
+    throw new AppError(404, 'Invoice already completed!!');
+  }
+  if (invoice.status === 'delivered') {
+    throw new AppError(404, 'Invoice already delivered!!');
+  }
+
+  const result = await Invoice.findByIdAndUpdate(
+    id,
+    {
+      date: invoice.extendDate,
+      extendDate: null,
+    },
+    { new: true },
+  );
+  if (!result) {
+    throw new AppError(404, 'Invoice Result Not Found !');
+  }
 
   return result;
 };
@@ -442,5 +527,7 @@ export const invoiceService = {
   invoiceApprove,
   invoiceDelivery,
   invoiceComplete,
+  invoiceExtend,
+  invoiceExtendApprove,
   deletedInvoiceQuery,
 };
