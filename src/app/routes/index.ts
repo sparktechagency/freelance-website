@@ -6,7 +6,7 @@ import settingsRouter from '../modules/settings/setting.route';
 import notificationRoutes from '../modules/notification/notification.route';
 import paymentRouter from '../modules/payment/payment.route';
 // import walletRouter from '../modules/wallet/wallet.route';
-import withdrawRouter from '../modules/withdraw/withdraw.route';
+// import withdrawRouter from '../modules/withdraw/withdraw.route';
 // import reviewRouter from '../modules/ratings/ratings.route';
 import chatRouter from '../modules/chat/chat.route';
 import messageRouter from '../modules/message/message.route';
@@ -14,7 +14,6 @@ import messageRouter from '../modules/message/message.route';
 import faqRouter from '../modules/faq/faq.route';
 import contactUsRouter from '../modules/contactUs/contactUs.route';
 import reportRouter from '../modules/report/report.route';
-import commentsRouter from '../modules/comments/comments.route';
 import categoryRoutes from '../modules/category/category.route';
 // import favoriteRoutes from '../modules/favorite/favorite.route';
 import postRouter from '../modules/post/post.route';
@@ -65,10 +64,10 @@ const moduleRoutes = [
     path: '/payment',
     route: paymentRouter,
   },
-  {
-    path: '/withdraw',
-    route: withdrawRouter,
-  },
+  // {
+  //   path: '/withdraw',
+  //   route: withdrawRouter,
+  // },
 
   // {
   //   path: '/review',
@@ -105,12 +104,6 @@ const moduleRoutes = [
     path: '/contact-us',
     route: contactUsRouter,
   },
-
-  {
-    path: '/comments',
-    route: commentsRouter,
-  },
-
   {
     path: '/category',
     route: categoryRoutes,

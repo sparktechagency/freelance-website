@@ -9,7 +9,7 @@ const reportcommentsRouter = express.Router();
 reportcommentsRouter
   .post(
     '/create-report-comments',
-    auth(USER_ROLE.USER),
+    auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
     reportcommentController.createReportComment,
   )
 

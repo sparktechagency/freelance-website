@@ -3,24 +3,25 @@ import httpStatus from 'http-status';
 import QueryBuilder from '../../builder/QueryBuilder';
 import ReportComments from './reportComments.model';
 import Message from '../message/message.model';
-import Comments from '../comments/comments.model';
+// import Comments from '../comments/comments.model';
 
 const createReportCommentOrReply = async (payload: {
   commentId?: string;
   userId: string;
 }) => {
-  const message = await Comments.findById(payload.commentId);
-  if (!message) {
-    throw new AppError(404, 'Message Not Found!!');
-  }
 
-  const existingReportcomment = await ReportComments.findOne({
-    commentId: message._id,
-    userId: payload.userId,
-  });
-  if (existingReportcomment) {
-    throw new AppError(400, 'You have already reported this comment!');
-  }
+  // const message = await Comments.findById(payload.commentId);
+  // if (!message) {
+  //   throw new AppError(404, 'Message Not Found!!');
+  // }
+
+  // const existingReportcomment = await ReportComments.findOne({
+  //   commentId: message._id,
+  //   userId: payload.userId,
+  // });
+  // if (existingReportcomment) {
+  //   throw new AppError(400, 'You have already reported this comment!');
+  // }
 
   const reportcomment = await ReportComments.create(payload);
   return reportcomment;

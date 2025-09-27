@@ -9,8 +9,6 @@ import httpStatus from 'http-status';
 import config from '../../config';
 import mongoose from 'mongoose';
 import { StripeAccount } from '../stripeAccount/stripeAccount.model';
-import { withdrawService } from '../withdraw/withdraw.service';
-import { Withdraw } from '../withdraw/withdraw.model';
 import cron from 'node-cron';
 import { notificationService } from '../notification/notification.service';
 import axios from 'axios';

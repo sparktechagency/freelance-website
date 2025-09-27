@@ -6,10 +6,16 @@ import { reportController } from './report.controller';
 const reportRouter = express.Router();
 
 
-reportRouter.post('/', auth(USER_ROLE.USER), reportController.createReport).get(
-  '/',
-  //  auth(USER_ROLE.ADMIN),
-  reportController.getAllReport,
-);
+reportRouter
+  .post(
+    '/',
+    auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
+    reportController.createReport,
+  )
+  .get(
+    '/',
+    //  auth(USER_ROLE.ADMIN),
+    reportController.getAllReport,
+  );
 
 export default reportRouter;
