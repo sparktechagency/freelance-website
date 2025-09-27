@@ -33,7 +33,7 @@ async function main() {
       );
       console.log('ip', config.ip);
     });
-    
+     console.log('ip4', config.ip);
     await createSuperAdmin();
 
     socketIO(io);
