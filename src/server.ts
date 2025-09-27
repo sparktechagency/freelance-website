@@ -8,14 +8,6 @@ import config from './app/config';
 import { createSuperAdmin } from './app/DB';
 
 let server: Server;
-const socketServer = createServer();
-
-const io: SocketIOServer = new SocketIOServer(socketServer, {
-  cors: {
-    origin: '*',
-  },
-});
-
 
 async function main() {
   try {
