@@ -15,13 +15,15 @@ async function main() {
     console.log('config.database_url', config.database_url);
    
     await mongoose.connect(config.database_url as string);
-   
+    console.log('ip1', config.ip);
     server = createServer(app);
+     console.log('ip2', config.ip);
     const io: SocketIOServer = new SocketIOServer(server, {
       cors: {
         origin: '*',
       },
     });
+     console.log('ip3', config.ip);
 
     server.listen(Number(config.port), () => {
       console.log(
@@ -29,6 +31,7 @@ async function main() {
           `Server (HTTP + Socket.IO) is running on ${config.ip}:${config.port}`,
         ).bold,
       );
+      console.log('ip', config.ip);
     });
     
     await createSuperAdmin();
