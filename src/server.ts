@@ -38,31 +38,9 @@ async function main() {
 
     const io: SocketIOServer = new SocketIOServer(server, {
       cors: {
-        origin: (origin, callback) => {
-          const allowedOrigins = [
-            'http://10.10.7.109:3000',
-            'http://10.10.7.33:3000',
-            'http://10.10.7.33:3001',
-            'http://82.165.134.157:3000',
-            'http://82.165.134.157:3001',
-            'http://localhost:3000',
-          ];
-
-          console.log('🔵 Socket.IO Origin Check:', origin);
-
-          if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-            console.log('🟢 Socket.IO Origin Allowed:', origin);
-          } else {
-            callback(new Error('Not allowed by CORS'));
-            console.log('🔴 Socket.IO Origin Denied:', origin);
-          }
-        },
-        credentials: true,
-        methods: ['GET', 'POST'],
+        origin: "*",
       },
-      allowEIO3: true,
-      transports: ['websocket', 'polling'],
+      
     });
 
 

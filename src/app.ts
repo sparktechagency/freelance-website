@@ -41,25 +41,7 @@ export const allowedOrigins = [
 ];
 app.use(
   cors({
-    origin: [
-      'http://10.10.7.109:3000',
-      'http://10.10.7.33:3000',
-      'http://10.10.7.33:3001',
-      'http://82.165.134.157:3000',
-      'http://82.165.134.157:3001',
-      'http://localhost:3000',
-    ],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'X-Requested-With',
-      'Cookie',
-      'Set-Cookie',
-      'Access-Control-Allow-Credentials',
-      'Access-Control-Allow-Origin',
-    ],
+    origin: '*',
   }),
 );
 
