@@ -19,7 +19,6 @@ invoicesRouter
     auth(USER_ROLE.CLIENT),
     invoiceController.invoiceApprove,
   )
-
   .post(
     '/invoice-delivery/:id',
     auth(USER_ROLE.FREELANCER),

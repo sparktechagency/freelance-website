@@ -14,16 +14,20 @@ messageRouter.get('/', messageController.getAllMessages);
 
 messageRouter.post(
   '/send-messages',
+  (req, res, next) => {
+    console.log('************************************************************* hit hoise');
+    next();
+  },
   auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
   upload.fields([{ name: 'image', maxCount: 5 }]),
   messageController.createMessages,
 );
-messageRouter.post(
-  '/send-messages',
-  auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
-  upload.fields([{ name: 'image', maxCount: 5 }]),
-  messageController.createMessages,
-);
+// messageRouter.post(
+//   '/send-messages',
+//   auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
+//   upload.fields([{ name: 'image', maxCount: 5 }]),
+//   messageController.createMessages,
+// );
 messageRouter.post(
   '/pin-unpin-message/:messageId',
   auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),

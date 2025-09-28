@@ -886,6 +886,7 @@ const automaticCompletePayment = async (event: Stripe.Event): Promise<void> => {
         const invoiceId = metadata?.invoiceId as string;
         const userId = metadata?.userId as string;
         const type = metadata?.type as string;
+        console.log('===type', type);
 
         if (!paymentIntentId) {
           throw new AppError(

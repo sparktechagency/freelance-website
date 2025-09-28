@@ -11,12 +11,10 @@ import router from './app/routes';
 import path from 'path';
 import { serverRunningTemplete } from './templete/templete';
 import { paymentController } from './app/modules/payment/payment.controller';
-// import handleStripeWebhook from './app/helpers/stripe/stripe/handleStripeWebhook';
 
 const app: Application = express();
 
-// app.set('views', path.join(__dirname, 'views'));
-// app.set('view engine', 'ejs');
+
 
 app.post(
   '/api/v1/freelance-payment-webhook',
@@ -24,11 +22,7 @@ app.post(
   paymentController.conformWebhook,
 );
 
-// app.post(
-//   '/api/v1/subscription-renewal-webhook',
-//   express.raw({ type: 'application/json' }),
-//   paymentController.renewalconformWebhook,
-// );
+
 
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
@@ -36,16 +30,36 @@ app.use(express.urlencoded({ extended: true }));
 //parsers
 app.use(express.json());
 app.use(cookieParser());
+
+export const allowedOrigins = [
+  'http://10.10.7.109:3000',
+  'http://10.10.7.33:3000',
+  'http://10.10.7.33:3001',
+  'http://82.165.134.157:3000',
+  'http://82.165.134.157:3001',
+  'http://localhost:3000',
+];
 app.use(
   cors({
     origin: [
-      'http://10.10.7.109:3000', 
+      'http://10.10.7.109:3000',
       'http://10.10.7.33:3000',
+      'http://10.10.7.33:3001',
       'http://82.165.134.157:3000',
       'http://82.165.134.157:3001',
+      'http://localhost:3000',
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Requested-With',
+      'Cookie',
+      'Set-Cookie',
+      'Access-Control-Allow-Credentials',
+      'Access-Control-Allow-Origin',
+    ],
   }),
 );
 
