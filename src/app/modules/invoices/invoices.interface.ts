@@ -13,5 +13,6 @@ export type TInvoices = {
   deliveryMessage: string;
   deliveryFiles: string[];
   extendDate?: Date;
+  extendReason?: string;
   
 };

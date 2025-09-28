@@ -41,6 +41,11 @@ invoicesRouter
     auth(USER_ROLE.CLIENT),
     invoiceController.invoiceExtendApprove,
   )
+  // .post(
+  //   '/invoice-extend-cancel/:id',
+  //   auth(USER_ROLE.CLIENT),
+  //   invoiceController.invoiceExtendCancel,
+  // )
   .get(
     '/',
     // auth(USER_ROLE.ADMIN),

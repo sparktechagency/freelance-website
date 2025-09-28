@@ -54,6 +54,7 @@ messageRouter.patch(
 
 messageRouter.get(
   '/my-messages/:chatId',
+  auth(USER_ROLE.FREELANCER, USER_ROLE.CLIENT),
   messageController.getMessagesByChatId,
 );
 

@@ -154,9 +154,8 @@ const invoiceComplete = catchAsync(async (req, res) => {
 const invoiceExtend = catchAsync(async (req, res) => {
   const { userId } = req.user;
   const { id } = req.params;
-  const extendDate = req.body.extendDate;
-
-  const result = await invoiceService.invoiceExtend(userId, id, extendDate);
+  const payload = req.body;
+  const result = await invoiceService.invoiceExtend(userId, id, payload);
 
   sendResponse(res, {
     success: true,
@@ -170,7 +169,8 @@ const invoiceExtendApprove = catchAsync(async (req, res) => {
   const { userId } = req.user;
   const { id } = req.params;
 
-  const result = await invoiceService.invoiceExtendApprove(userId, id,);
+
+  const result = await invoiceService.invoiceExtendApprove(userId, id, req.query);
 
   sendResponse(res, {
     success: true,

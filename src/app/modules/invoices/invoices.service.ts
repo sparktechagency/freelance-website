@@ -14,6 +14,7 @@ import Subscription from '../subscription/subscription.model';
 import OpenAI from 'openai';
 import config from '../../config';
 import { GoogleGenAI } from '@google/genai';
+import { sendEmail } from '../../utils/mailSender';
 
 const createInvoice = async (payload: TInvoices) => {
   console.log('Invoice payload=', payload);
@@ -75,7 +76,6 @@ const createInvoice = async (payload: TInvoices) => {
     );
   }
 
-
   if (payload.invoiceType === 'tender') {
     if (!payload.tenderId) {
       throw new AppError(403, 'tender id required!');
@@ -132,7 +132,6 @@ const createInvoice = async (payload: TInvoices) => {
   }
   return result;
 };
-
 
 const getAllInvoiceByClientQuery = async (
   query: Record<string, unknown>,
@@ -401,9 +400,9 @@ const invoiceComplete = async (clientUserId: string, id: string) => {
   const updateFreelancerDetails = await User.findByIdAndUpdate(
     freelancerUser._id,
     {
-      $inc:{
-        jobsDone: 1
-      }
+      $inc: {
+        jobsDone: 1,
+      },
     },
   );
 
@@ -424,8 +423,11 @@ const invoiceComplete = async (clientUserId: string, id: string) => {
   return result;
 };
 
-
-const invoiceExtend = async (freelancerUserId: string, id: string, extendDate: Date) => {
+const invoiceExtend = async (
+  freelancerUserId: string,
+  id: string,
+  payload: any,
+) => {
   const freelancer = await User.findById(freelancerUserId);
   if (!freelancer) {
     throw new AppError(404, 'Freelancer Not Found!!');
@@ -450,7 +452,8 @@ const invoiceExtend = async (freelancerUserId: string, id: string, extendDate: D
   const result = await Invoice.findByIdAndUpdate(
     id,
     {
-      extendDate: extendDate,
+      extendDate: payload.extendDate,
+      extendReason: payload.extendReason,
     },
     { new: true },
   );
@@ -463,15 +466,16 @@ const invoiceExtend = async (freelancerUserId: string, id: string, extendDate: D
 const invoiceExtendApprove = async (
   clientUserId: string,
   id: string,
+  query: any,
 ) => {
-  const freelancer = await User.findById(clientUserId);
-  if (!freelancer) {
-    throw new AppError(404, 'Freelancer Not Found!!');
+  const client = await User.findById(clientUserId);
+  if (!client) {
+    throw new AppError(404, 'Client Not Found!!');
   }
   if (!id) {
     throw new AppError(400, 'Invalid input parameters');
   }
-  const invoice = await Invoice.findById({
+  const invoice: any = await Invoice.findById({
     _id: id,
     clientUserId: clientUserId,
   });
@@ -484,15 +488,41 @@ const invoiceExtendApprove = async (
   if (invoice.status === 'delivered') {
     throw new AppError(404, 'Invoice already delivered!!');
   }
+  let result;
 
-  const result = await Invoice.findByIdAndUpdate(
-    id,
-    {
-      date: invoice.extendDate,
-      extendDate: null,
-    },
-    { new: true },
-  );
+  if (query.extendRequest === 'cancel') {
+    result = await Invoice.findByIdAndUpdate(
+      id,
+      {
+        extendDate: null,
+        extendReason: null,
+      },
+      { new: true },
+    );
+
+    await sendEmail(
+      invoice.freelancerUserId,
+      'Invoice Extend Cancelled',
+      `Hi Dear,
+
+We wanted to inform you that the extension request for your invoice #${invoice.id} has been cancelled. 
+
+If you have any questions or believe this is an error, please contact our support team.
+
+Best regards,
+`,
+    );
+  } else {
+    result = await Invoice.findByIdAndUpdate(
+      id,
+      {
+        date: invoice.extendDate,
+        extendDate: null,
+      },
+      { new: true },
+    );
+  }
+
   if (!result) {
     throw new AppError(404, 'Invoice Result Not Found !');
   }

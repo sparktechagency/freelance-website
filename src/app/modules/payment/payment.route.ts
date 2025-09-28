@@ -47,6 +47,7 @@ paymentRouter
     // auth(USER_ROLE.ADMIN),
     paymentController.getAllEarningRasio,
   )
+  .get('/success-account/:id', paymentController.successPageAccount)
 
   .get('/:id', paymentController.getSinglePayment)
 
