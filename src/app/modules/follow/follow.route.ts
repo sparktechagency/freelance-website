@@ -13,7 +13,8 @@ followRouter
     //  auth(USER_ROLE.ADMIN),
     followController.getAllFollow,
   )
-  .get('/:id', followController.getSingleFollow)
+  .get('/is-follow/:id', auth(USER_ROLE.CLIENT), followController.isFollow)
+  .get('/:id', auth(USER_ROLE.CLIENT), followController.getSingleFollow)
   .patch(
     '/:id',
     //  auth(USER_ROLE.ADMIN),

@@ -57,6 +57,25 @@ const getSingleFollowQuery = async (id: string) => {
   return follow;
 };
 
+const isFollow = async (freelancerId: string, clientId: string) => {
+
+    const freelancer = await User.findById(freelancerId);
+
+    if (!freelancer) {
+      throw new AppError(404, 'Freelancer not found');
+    }
+
+    const client = await User.findById(clientId);
+
+    if (!client) {
+      throw new AppError(404, 'Client not found');
+    }
+
+  const follow: any = await Follow.findOne({ freelancerId, clientId });
+ 
+  return follow ? 'true' : 'false';
+};
+
 const updateSingleFollowQuery = async (id: string, payload: any) => {
   console.log('id', id);
   console.log('updated payload', payload);
@@ -95,6 +114,7 @@ export const followService = {
   createFollow,
   getAllFollowQuery,
   getSingleFollowQuery,
+  isFollow,
   updateSingleFollowQuery,
   deletedFollowQuery,
 };

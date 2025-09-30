@@ -40,6 +40,18 @@ const getSingleFollow = catchAsync(async (req, res) => {
   });
 });
 
+
+const isFollow = catchAsync(async (req, res) => {
+  const result = await followService.isFollow(req.params.id, req.user.userId);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    data: result,
+    message: 'Single Follow are successful!!',
+  });
+});
+
 const updateSingleFollow = catchAsync(async (req, res) => {
   const { id } = req.params;
   const payload = req.body;
@@ -68,6 +80,7 @@ const deleteSingleFollow = catchAsync(async (req, res) => {
 export const followController = {
   createFollow,
   getAllFollow,
+  isFollow,
   getSingleFollow,
   updateSingleFollow,
   deleteSingleFollow,
