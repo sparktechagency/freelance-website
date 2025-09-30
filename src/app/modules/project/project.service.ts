@@ -29,6 +29,13 @@ const getAllProjectQuery = async (userid: string, query: Record<string, unknown>
   return { meta, result };
 };
 
+const getAllProjectByFreelancerId = async (
+  freelancerId: string,
+) => {
+ const result = await Project.find({ userId: freelancerId, isDeleted: false });
+  return result;
+};
+
 
 
 const getSingleProject = async (id: string) => {
@@ -87,6 +94,7 @@ const deleteProject = async (id: string) => {
 export const projectService = {
   createProject,
   getAllProjectQuery,
+  getAllProjectByFreelancerId,
   getSingleProject,
   updateProject,
   deleteProject,

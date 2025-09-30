@@ -69,6 +69,19 @@ const getAllProject = catchAsync(async (req, res) => {
   });
 });
 
+const getAllProjectByFreelancerId = catchAsync(async (req, res) => {
+  const id = req.params.id;
+  const result = await projectService.getAllProjectByFreelancerId(id);
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    // meta: result.meta,
+    data: result,
+    message: 'Project All are requered successful!!',
+  });
+});
+
 
 
 const getSingleProject = catchAsync(async (req: Request, res: Response) => {
@@ -137,6 +150,7 @@ const deletedProject = catchAsync(async (req: Request, res: Response) => {
 export const projectController = {
   createProject,
   getAllProject,
+  getAllProjectByFreelancerId,
   getSingleProject,
   updateProject,
   deletedProject,

@@ -12,6 +12,11 @@ freelancerInfoRouter
     auth(USER_ROLE.FREELANCER),
     freelancerinfoController.updateSingleFreelancerinfo,
   )
+  .patch(
+    '/update',
+    auth(USER_ROLE.FREELANCER),
+    freelancerinfoController.updateSingleFreelancerinfo,
+  )
   .delete(
     '/:id',
     // auth(USER_ROLE.ADMIN, USER_ROLE.SUB_ADMIN),

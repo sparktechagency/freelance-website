@@ -123,6 +123,17 @@ const getUserById = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const singleFreelancerInfo = catchAsync(async (req: Request, res: Response) => {
+  const frelancerId = req.params.id;
+  console.log('frelancerId', frelancerId);
+  const result = await userService.singleFreelancerInfo(frelancerId);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'single freelancer fetched successfully',
+    data: result,
+  });
+});
 
 const getMyProfile = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.getUserById(req?.user?.userId);
@@ -198,6 +209,7 @@ export const userController = {
   freelancerResponse,
   // userSwichRole,
   getUserById,
+  singleFreelancerInfo,
   getMyProfile,
   getAllFreelancers,
   updateMyProfile,

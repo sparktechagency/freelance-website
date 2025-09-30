@@ -496,6 +496,13 @@ const getUserById = async (id: string) => {
   }
   return result;
 };
+const singleFreelancerInfo = async (id: string) => {
+  const result = await User.findById(id).populate('freelancerId');
+  if (!result) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  return result;
+};
 
 const getAllFreelancers = async (query: Record<string, unknown>) => {
   console.log('query', query);
@@ -603,6 +610,7 @@ export const userService = {
   creatorUserService,
   // userSwichRoleService,
   getUserById,
+  singleFreelancerInfo,
   getAllFreelancers,
   getUserByEmail,
   updateUser,

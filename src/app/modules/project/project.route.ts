@@ -20,6 +20,7 @@ projectRoutes
     projectController.createProject,
   )
   .get('/me', auth(USER_ROLE.FREELANCER), projectController.getAllProject)
+  .get('/freelancer-project/:id', projectController.getAllProjectByFreelancerId)
   .get('/:id', projectController.getSingleProject)
   .patch(
     '/:id',

@@ -272,7 +272,7 @@ const cancelPaymentPage = async (req: Request, res: Response) => {
 const successPageAccount = catchAsync(async (req, res) => {
   // console.log('payment account hit hoise');
   const { id } = req.params;
-  console.log('user id ', req.user.userId);
+  // console.log('user id ', req.user.userId);
   const account = await stripe.accounts.update(id, {});
   // console.log('account', account);
 
@@ -312,11 +312,9 @@ const successPageAccount = catchAsync(async (req, res) => {
   ) {
     // return res.redirect(`${req.protocol + '://' + req.get('host')}/payment/refreshAccountConnect/${id}`);
   }
+  const getUser = await StripeAccount.findOne({ accountId: id});
   await StripeAccount.updateOne({ accountId: id }, { isCompleted: true });
-  await User.updateOne(
-    { _id: req.user.userId },
-    { isStripeConnectedAccount: true },
-  );  
+  await User.updateOne({ _id: getUser!.userId }, { isStripeConnectedAccount: true });  
 
 res.send(successAccountTemplete);
 });
