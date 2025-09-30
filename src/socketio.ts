@@ -12,16 +12,24 @@ const socketIO = (io: Server) => {
 
   io.on('connection', (socket: Socket) => {
     try {
-
-
       // Handle 'add-new-chat' event
       // socket.on('add-new-chat', (data, callback) =>
       //   handleChatEvents(socket, data, callback),
       // );
+
       // // Handle other events, like 'add-new-message'
+
+      // socket.on('add-new-message', (data, callback) => {
+      //   console.log('data****************', data);
+      //   console.log('callback********************', callback);
+      //   // Add your message handling logic here
+      // });
+
+      // Handle 'add-new-message' event
       // socket.on('add-new-message', (data, callback) =>
       //   handleMessageEvents(socket, data, callback, io),
       // );
+
 
     } catch (error) {
       console.error('Error in socket connection:', error);

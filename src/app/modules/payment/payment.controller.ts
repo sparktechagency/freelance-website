@@ -14,6 +14,7 @@ import { deleteFromS3 } from '../../utils/s3';
 import mongoose from 'mongoose';
 import { cancelTemplete, successAccountTemplete, successTemplete } from '../../../templete/templete';
 import { notificationService } from '../notification/notification.service';
+import { User } from '../user/user.models';
 
 
 const addPayment = catchAsync(async (req, res, next) => {
@@ -271,6 +272,7 @@ const cancelPaymentPage = async (req: Request, res: Response) => {
 const successPageAccount = catchAsync(async (req, res) => {
   // console.log('payment account hit hoise');
   const { id } = req.params;
+  console.log('user id ', req.user.userId);
   const account = await stripe.accounts.update(id, {});
   // console.log('account', account);
 
@@ -311,6 +313,10 @@ const successPageAccount = catchAsync(async (req, res) => {
     // return res.redirect(`${req.protocol + '://' + req.get('host')}/payment/refreshAccountConnect/${id}`);
   }
   await StripeAccount.updateOne({ accountId: id }, { isCompleted: true });
+  await User.updateOne(
+    { _id: req.user.userId },
+    { isStripeConnectedAccount: true },
+  );  
 
 res.send(successAccountTemplete);
 });

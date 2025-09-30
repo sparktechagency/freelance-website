@@ -28,6 +28,10 @@ export interface TUserCreate {
   companyId:string;
   coverPhoto: string;
   jobsDone: number;
+  serviceType: string;
+  categoryType: string;
+  isStripeConnectedAccount: boolean;
+  followers: number;
 }
 
 export interface TUser extends TUserCreate {

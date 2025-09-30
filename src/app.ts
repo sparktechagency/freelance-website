@@ -27,6 +27,8 @@ app.post(
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 
+
+
 //parsers
 app.use(express.json());
 app.use(cookieParser());
@@ -39,6 +41,7 @@ export const allowedOrigins = [
   'http://82.165.134.157:3001',
   'http://localhost:3000',
 ];
+
 app.use(
   cors({
     origin: '*',

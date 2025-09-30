@@ -113,6 +113,24 @@ const userSchema = new Schema<TUser>(
       required: false,
       default: 0,
     },
+    serviceType: {
+      type: String,
+      required: false,
+    },
+    categoryType: {
+      type: String,
+      required: false,
+    },
+    isStripeConnectedAccount: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    followers: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
   },
   {
     timestamps: true,

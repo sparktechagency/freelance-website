@@ -27,6 +27,7 @@ import packageRouter from '../modules/package/package.route';
 import subcriptionRouter from '../modules/subscription/subscription.route';
 import invoicesRouter from '../modules/invoices/invoices.route';
 import supportMessageRouter from '../modules/supportMessage/supportMessage.route';
+import followRouter from '../modules/follow/follow.route';
 
 const router = Router();
 
@@ -144,6 +145,10 @@ const moduleRoutes = [
   {
     path: '/support-message',
     route: supportMessageRouter,
+  },
+  {
+    path: '/follow',
+    route: followRouter,
   },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));
