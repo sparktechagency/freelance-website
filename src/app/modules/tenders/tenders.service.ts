@@ -133,13 +133,19 @@ const respondTender = async (id: string, userId: string) => {
  if (!tender) {
    throw new AppError(404, 'Tender not found!');
  }
+// console.log('tender', tender);
+ const existChat = await Chat.findOne({ participants: [tender.userId, userId] });
+//  console.log('existChat', existChat);
 
- const chatCreate = await Chat.create({participants: [tender.userId, userId]});
- if (!chatCreate) {
-   throw new AppError(404, 'Chat not created!');
+ if (existChat) {
+   return existChat;
+ } else {
+   const chatCreate = await Chat.create({
+     participants: [tender.userId, userId],
+   });
+   return chatCreate;
  }
 
-  return chatCreate;
 };
 
 const updateCreateTender = async (id: string, payload: Partial<ITenders>) => {

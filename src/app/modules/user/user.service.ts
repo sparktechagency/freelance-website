@@ -244,7 +244,7 @@ const freelancerResponse = async ( clientId:string, id:string)=> {
     });
 
     if (!response) {
-      throw new AppError(httpStatus.BAD_REQUEST, 'Respnse not valid!');
+      throw new AppError(httpStatus.BAD_REQUEST, 'Response not valid!');
     }
 
     return response;
