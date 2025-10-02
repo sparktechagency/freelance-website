@@ -204,6 +204,112 @@ const getAllPostQuery = async (
   
 };
 
+const getAllPublicPost = async (
+  query: Record<string, unknown>,
+  userId: string,
+) => {
+  console.log('query=', query);
+
+  const AcreatePostQuery = new QueryBuilder(
+    Post.find({ userId, isDeleted: false }).populate({
+      path: 'userId',
+      select: 'profile fullName email role address',
+    }),
+    query,
+  )
+    .search([])
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const result = await AcreatePostQuery.modelQuery;
+  const meta = await AcreatePostQuery.countTotal();
+
+  return { meta, result };
+
+  // if(query.recent){
+  //  const AcreatePostQuery = new QueryBuilder(
+  //    Post.find({ isDeleted: false, createdAt: { $gt: new Date(new Date().getTime() - 24 * 60 * 60 * 1000) }  }).populate({
+  //      path: 'userId',
+  //      select: 'profile fullName email role address',
+  //    }),
+  //    query,
+  //  )
+  //    .search([])
+  //    .filter()
+  //    .sort()
+  //    .paginate()
+  //    .fields();
+
+  //  const result = await AcreatePostQuery.modelQuery;
+
+  //  const meta = await AcreatePostQuery.countTotal();
+  //  return { meta, result };
+
+  // }else if (query.highlight) {
+  //   const AcreatePostQuery = new QueryBuilder(
+  //     Post.find({ isDeleted: false, highlightsCount: { $gt: 0 } }).populate({
+  //       path: 'userId',
+  //       select: 'profile fullName email role address',
+  //     }),
+  //     query,
+  //   )
+  //     .search([])
+  //     .filter()
+  //     .sort()
+  //     .paginate()
+  //     .fields();
+
+  //   const result = await AcreatePostQuery.modelQuery;
+
+  //   const meta = await AcreatePostQuery.countTotal();
+  //   return { meta, result };
+  // }else if(query.popular){
+  //   query.sort = '-likesCount';
+  //   query.sort = '-highlightsCount';
+  //   query.sort = '-commentsCount';
+
+  //   const AcreatePostQuery = new QueryBuilder(
+  //     Post.find({ isDeleted: false }).populate({
+  //       path: 'userId',
+  //       select: 'profile fullName email role address',
+  //     }),
+  //     query,
+  //   )
+  //     .search([])
+  //     .filter()
+  //     .sort()
+  //     .paginate()
+  //     .fields();
+
+  //   const result = await AcreatePostQuery.modelQuery;
+
+  //   const meta = await AcreatePostQuery.countTotal();
+  //   return { meta, result };
+
+  // }else{
+  //   const AcreatePostQuery = new QueryBuilder(
+  //     Post.find({ isDeleted: false }).populate({
+  //       path: 'userId',
+  //       select: 'profile fullName email role address',
+  //     }),
+  //     query,
+  //   )
+  //     .search([])
+  //     .filter()
+  //     .sort()
+  //     .paginate()
+  //     .fields();
+
+  //   const result = await AcreatePostQuery.modelQuery;
+
+  //   const meta = await AcreatePostQuery.countTotal();
+  //   return { meta, result };
+
+  // }
+};
+
 const getSinglePostQuery = async (id: string, ) => {
   const existingPost: any = await Post.findOne({
     _id: id,
@@ -296,6 +402,7 @@ export const postService = {
   // createPostLike,
   // createPostHighlight,
   getAllPostQuery,
+  getAllPublicPost,
   getSinglePostQuery,
   updateSinglePostQuery,
   deletedPostQuery,

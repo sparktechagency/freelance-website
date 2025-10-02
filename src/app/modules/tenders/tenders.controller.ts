@@ -90,6 +90,22 @@ const getAllTenderByClient = catchAsync(async (req, res) => {
   });
 });
 
+const getAllPublicTenderByClient = catchAsync(async (req, res) => {
+  const clientId = req.params.id;
+  const result = await createTenderService.getAllPublicTenderByClient(
+    req.query,
+    clientId,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    meta: result.meta,
+    data: result.result,
+    message: 'Tender All are requered successful!!',
+  });
+});
+
 
 const getAllRunningTender = catchAsync(async (req, res) => {
   const clientId = req.params.clientId;
@@ -187,6 +203,7 @@ export const tenderController = {
   createTender,
   getAllTender,
   getAllTenderByClient,
+  getAllPublicTenderByClient,
   getAllRunningTender,
   getSingleTender,
   respondTender,

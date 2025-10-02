@@ -1,6 +1,6 @@
 import { Types } from "mongoose";
 
 export type TFollow = {
-  clientId: Types.ObjectId;
-  freelancerId: Types.ObjectId;
+  userId: Types.ObjectId;
+  followerUserId: Types.ObjectId;
 };

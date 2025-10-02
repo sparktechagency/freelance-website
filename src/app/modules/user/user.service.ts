@@ -32,12 +32,11 @@ export interface OTPVerifyAndCreateUserProps {
   token: string;
 }
 
-
 const createUserToken = async (payload: TUserCreate) => {
-  const { role, email, fullName, password, } = payload;
+  const { role, email, fullName, password } = payload;
 
   // user role check
-  if (!(role === USER_ROLE.CLIENT  || role === USER_ROLE.FREELANCER)) {
+  if (!(role === USER_ROLE.CLIENT || role === USER_ROLE.FREELANCER)) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
   }
 
@@ -101,7 +100,7 @@ const createUserToken = async (payload: TUserCreate) => {
     // // console.log({alala})
   });
 
-console.log('payload====', payload);
+  console.log('payload====', payload);
 
   // crete token
   const createUserToken = createToken({
@@ -121,7 +120,7 @@ const otpVerifyAndCreateUser = async ({
   if (!token) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Token not found');
   }
-console.log('token', token)
+  console.log('token', token);
   const decodeData = verifyToken({
     token,
     access_secret: config.jwt_access_secret as string,
@@ -130,11 +129,10 @@ console.log('token', token)
 
   if (!decodeData) {
     throw new AppError(httpStatus.BAD_REQUEST, 'You are not authorised');
-
   }
 
   const { password, email, fullName, role, profile, ...rest } = decodeData;
-  if (!( role === USER_ROLE.CLIENT || role === USER_ROLE.FREELANCER)) {
+  if (!(role === USER_ROLE.CLIENT || role === USER_ROLE.FREELANCER)) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
   }
 
@@ -151,9 +149,6 @@ console.log('token', token)
     });
   });
 
-
-
-
   const isExist = await User.isUserExist(email as string);
 
   if (isExist) {
@@ -163,13 +158,13 @@ console.log('token', token)
     );
   }
 
- const userData = {
-   password,
-   email,
-   fullName,
-   role,
-   profile
- };
+  const userData = {
+    password,
+    email,
+    fullName,
+    role,
+    profile,
+  };
 
   const user = await User.create(userData);
   console.log('user', user);
@@ -182,17 +177,21 @@ console.log('token', token)
     const freelancerInfo = await FreelancerInfo.create({
       freelancerUserId: user._id,
     });
-    if(!freelancerInfo){
-      throw new AppError(httpStatus.BAD_REQUEST, 'freelancerInfo creation failed');
+    if (!freelancerInfo) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'freelancerInfo creation failed',
+      );
     }
-    
-    await User.findByIdAndUpdate(user._id, {
-      freelancerId: freelancerInfo._id,
-    }, { new: true });
-    
+
+    await User.findByIdAndUpdate(
+      user._id,
+      {
+        freelancerId: freelancerInfo._id,
+      },
+      { new: true },
+    );
   }
-
-
 
   // const jwtPayload: {
   //   userId: string;
@@ -215,19 +214,16 @@ console.log('token', token)
   return user;
 };
 
-
-const freelancerResponse = async ( clientId:string, id:string)=> {
-
+const freelancerResponse = async (clientId: string, id: string) => {
   const user = await User.findById(clientId);
 
-  if(user?.role !== "client"){
+  if (user?.role !== 'client') {
     throw new AppError(httpStatus.BAD_REQUEST, 'You are not a client');
-  
   }
 
   const freelancer = await User.findById(id);
 
-  if(freelancer?.role !== "freelancer"){
+  if (freelancer?.role !== 'freelancer') {
     throw new AppError(httpStatus.BAD_REQUEST, 'Freelancer not found');
   }
 
@@ -238,7 +234,7 @@ const freelancerResponse = async ( clientId:string, id:string)=> {
   if (isExist) {
     return isExist;
     // throw new AppError(httpStatus.BAD_REQUEST, 'Chat already exists');
-  }else{
+  } else {
     const response = await Chat.create({
       participants: [user._id, freelancer._id],
     });
@@ -249,20 +245,16 @@ const freelancerResponse = async ( clientId:string, id:string)=> {
 
     return response;
   }
-
-  
 };
 
+const creatorUserService = async (payload: any) => {
+  const { role, email, fullName, password, ...rest } = payload;
 
-
-
-const creatorUserService = async (
-  payload:any
-) => {
-
-const { role, email, fullName, password, ...rest } = payload;
-
-  if (!( payload.role === USER_ROLE.CLIENT || payload.role === USER_ROLE.FREELANCER)) {
+  if (
+    !(
+      payload.role === USER_ROLE.CLIENT || payload.role === USER_ROLE.FREELANCER
+    )
+  ) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User data is not valid !!');
   }
 
@@ -279,7 +271,7 @@ const { role, email, fullName, password, ...rest } = payload;
     password: payload.password,
     email: payload.email,
     fullName: payload.fullName,
-    role: 'creator'
+    role: 'creator',
   };
   console.log('userData', userData);
 
@@ -288,8 +280,6 @@ const { role, email, fullName, password, ...rest } = payload;
   if (!user) {
     throw new AppError(httpStatus.BAD_REQUEST, 'User creation failed');
   }
-
-  
 
   // const jwtPayload: {
   //   userId: string;
@@ -322,11 +312,10 @@ const { role, email, fullName, password, ...rest } = payload;
 //   // console.log('as role', swichUser.asRole)
 //    let swichRole;
 //   if (swichUser.role == 'business') {
- 
+
 //       swichRole = 'customer';
-    
+
 //     }else{
-      
 
 //       swichRole = 'business';
 //     }
@@ -418,7 +407,6 @@ const updateUser = async (id: string, payload: Partial<TUser>) => {
 // ............................rest
 
 const getAllUserQuery = async (query: Record<string, unknown>) => {
-  
   const userQuery = new QueryBuilder(User.find({}), query)
     .search(['email', 'fullName'])
     .filter()
@@ -432,7 +420,6 @@ const getAllUserQuery = async (query: Record<string, unknown>) => {
 };
 
 const getAllUserCount = async () => {
-  
   // const allBusinessCount = await User.countDocuments({
   //   role: USER_ROLE.USER,
   // });
@@ -489,39 +476,38 @@ const getAllUserRatio = async (year: number) => {
 };
 
 const getUserById = async (id: string) => {
-  const result = await User.findById(id)
-    .populate('freelancerId');
-  if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'User not found');
-  }
-  return result;
-};
-const singleFreelancerInfo = async (id: string) => {
   const result = await User.findById(id).populate('freelancerId');
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'User not found');
   }
   return result;
 };
+const singleUserInfo = async (id: string) => {
+  const result = await User.findById(id);
+  let newResult;
+  if (result?.role === 'freelancer') {
+    newResult = await User.findById(id).populate('freelancerId');
+  } else {
+    newResult = await User.findById(id);
+  }
+  return newResult;
+};
 
 const getAllFreelancers = async (query: Record<string, unknown>) => {
   console.log('query', query);
-  if(query.freelancer === "top"){
-      const result = await User.find({ role: 'freelancer' })
-        .populate('freelancerId')
-        .sort({ jobsDone: -1 }).limit(30);
-      return result;
-
-  }else{
-      const result = await User.find({ role: 'freelancer' }).populate(
-        'freelancerId',
-      );
-      return result;
+  if (query.freelancer === 'top') {
+    const result = await User.find({ role: 'freelancer' })
+      .populate('freelancerId')
+      .sort({ jobsDone: -1 })
+      .limit(30);
+    return result;
+  } else {
+    const result = await User.find({ role: 'freelancer' }).populate(
+      'freelancerId',
+    );
+    return result;
   }
-
-  
 };
-
 
 const getUserByEmail = async (email: string) => {
   const result = await User.findOne({ email, isDeleted: false });
@@ -567,7 +553,6 @@ const deleteMyAccount = async (id: string, payload: DeleteAccountPayload) => {
   return userDeleted;
 };
 
-
 const blockedUser = async (id: string, userId: string) => {
   const existUser: TUser | null = await User.findById(id);
 
@@ -610,7 +595,7 @@ export const userService = {
   creatorUserService,
   // userSwichRoleService,
   getUserById,
-  singleFreelancerInfo,
+  singleUserInfo,
   getAllFreelancers,
   getUserByEmail,
   updateUser,

@@ -7,13 +7,13 @@ const followRouter = express.Router();
 
 
 followRouter
-  .post('/create-follow', auth(USER_ROLE.CLIENT), followController.createFollow)
+  .post('/create-follow', auth(USER_ROLE.CLIENT, USER_ROLE.FREELANCER), followController.createFollow)
   .get(
     '/',
     //  auth(USER_ROLE.ADMIN),
     followController.getAllFollow,
   )
-  .get('/is-follow/:id', auth(USER_ROLE.CLIENT), followController.isFollow)
+  .get('/is-follow/:id', auth(USER_ROLE.CLIENT, USER_ROLE.FREELANCER), followController.isFollow)
   .get('/:id', auth(USER_ROLE.CLIENT), followController.getSingleFollow)
   .patch(
     '/:id',

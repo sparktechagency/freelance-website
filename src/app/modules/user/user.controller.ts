@@ -123,10 +123,10 @@ const getUserById = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
-const singleFreelancerInfo = catchAsync(async (req: Request, res: Response) => {
+const singleUserInfo = catchAsync(async (req: Request, res: Response) => {
   const frelancerId = req.params.id;
   console.log('frelancerId', frelancerId);
-  const result = await userService.singleFreelancerInfo(frelancerId);
+  const result = await userService.singleUserInfo(frelancerId);
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -209,7 +209,7 @@ export const userController = {
   freelancerResponse,
   // userSwichRole,
   getUserById,
-  singleFreelancerInfo,
+  singleUserInfo,
   getMyProfile,
   getAllFreelancers,
   updateMyProfile,

@@ -60,7 +60,7 @@ userRoutes
   .get('/all-users-count', userController.getAllUserCount)
   .get('/all-users-rasio', userController.getAllUserRasio)
   .get('/:id', userController.getUserById)
-  .get('/single-freelancer/:id', userController.singleFreelancerInfo)
+  .get('/single-user/:id', userController.singleUserInfo)
 
   .patch(
     '/update-my-profile',

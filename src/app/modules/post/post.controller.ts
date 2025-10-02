@@ -75,6 +75,22 @@ const getAllPost = catchAsync(async (req, res) => {
   });
 });
 
+const getAllPublicPost = catchAsync(async (req, res) => {
+  const clientId = req.params.id;
+  const { meta, result } = await postService.getAllPublicPost(
+    req.query,
+    clientId,
+  );
+
+  sendResponse(res, {
+    success: true,
+    statusCode: httpStatus.OK,
+    meta: meta,
+    data: result,
+    message: ' All Post are requered successful!!',
+  });
+});
+
 const getSinglePost = catchAsync(async (req, res) => {
   const result = await postService.getSinglePostQuery(
     req.params.id,
@@ -129,6 +145,7 @@ export const postController = {
   // createPostLike,
   // createPostHighlight,
   getAllPost,
+  getAllPublicPost,
   getSinglePost,
   updateSinglePost,
   deleteSinglePost,

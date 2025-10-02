@@ -109,6 +109,25 @@ const getAllCreateTenderByClientQuery = async (
   return { meta, result };
 };
 
+const getAllPublicTenderByClient = async (
+  query: Record<string, unknown>,
+  userId: string,
+) => {
+  const ServicecreateTenderQuery = new QueryBuilder(
+    Tender.find({ isDeleted: false, userId: userId }),
+    query,
+  )
+    .search(['title', 'description', 'categoryName', 'serviceTypeName'])
+    .filter()
+    .sort()
+    .paginate()
+    .fields();
+
+  const result = await ServicecreateTenderQuery.modelQuery;
+  const meta = await ServicecreateTenderQuery.countTotal();
+  return { meta, result };
+};
+
 const getSingleCreateTender = async (id: string) => {
   const ServicecreateTender = await Tender.aggregate([
     { $match: { _id: new mongoose.Types.ObjectId(id) } },
@@ -195,6 +214,7 @@ export const createTenderService = {
   createTender,
   getAllCreateTenderQuery,
   getAllCreateTenderByClientQuery,
+  getAllPublicTenderByClient,
   getAllRunningTenderQuery,
   getSingleCreateTender,
   respondTender,

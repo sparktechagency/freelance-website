@@ -5,34 +5,41 @@ import { TFollow } from './follow.interface';
 import Follow from './follow.model';
 import { User } from '../user/user.models';
 
-const createFollow = async (clientId: string, freelancerId: string) => {
+const createFollow = async (userId: string, followerUserId: string) => {
   const payload = {
-    clientId,
-    freelancerId,
+    userId,
+    followerUserId,
   };
 
-  const freelancer = await User.findById(freelancerId);
+  const user = await User.findById(userId);
 
-  if (!freelancer) {
-    throw new AppError(404, 'Freelancer not found');
+  if (!user) {
+    throw new AppError(404, 'User not found');
   }
 
-  const client = await Follow.findOne({ clientId, freelancerId });
-
-  if(client){
-   const result = await Follow.findOneAndDelete({ clientId, freelancerId });
-   if(result){
-       await User.updateOne({ _id: freelancerId }, { $inc: { followers: -1 } });
-   }
-   return result && "Unfollow successfully!!";
-  }else{
-   const result = await Follow.create(payload);
-   if(result){
-       await User.updateOne({ _id: freelancerId }, { $inc: { followers: 1 } });
-   }
-   return result && 'Follow successfully!!';
+  const followerUser = await User.findById(followerUserId);
+  if (!followerUser) {
+    throw new AppError(404, 'followerUser not found');
   }
 
+  const client = await Follow.findOne({ userId, followerUserId });
+
+  if (client) {
+    const result = await Follow.findOneAndDelete({ userId, followerUserId });
+    if (result) {
+      await User.updateOne(
+        { _id: followerUserId },
+        { $inc: { followers: -1 } },
+      );
+    }
+    return result && 'Unfollow successfully!!';
+  } else {
+    const result = await Follow.create(payload);
+    if (result) {
+      await User.updateOne({ _id: followerUserId }, { $inc: { followers: 1 } });
+    }
+    return result && 'Follow successfully!!';
+  }
 };
 
 const getAllFollowQuery = async (query: Record<string, unknown>) => {
@@ -57,22 +64,21 @@ const getSingleFollowQuery = async (id: string) => {
   return follow;
 };
 
-const isFollow = async (freelancerId: string, clientId: string) => {
+const isFollow = async (followerUserId: string, userId: string) => {
+  const followerUser = await User.findById(followerUserId);
 
-    const freelancer = await User.findById(freelancerId);
+  if (!followerUser) {
+    throw new AppError(404, 'followerUser not found!!');
+  }
 
-    if (!freelancer) {
-      throw new AppError(404, 'Freelancer not found');
-    }
+  const user = await User.findById(userId);
 
-    const client = await User.findById(clientId);
+  if (!user) {
+    throw new AppError(404, 'User not found!!');
+  }
 
-    if (!client) {
-      throw new AppError(404, 'Client not found');
-    }
+  const follow: any = await Follow.findOne({ followerUserId, userId });
 
-  const follow: any = await Follow.findOne({ freelancerId, clientId });
- 
   return follow ? 'true' : 'false';
 };
 

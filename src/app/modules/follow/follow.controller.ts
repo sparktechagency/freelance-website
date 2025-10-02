@@ -5,9 +5,9 @@ import { followService } from './follow.service';
 
 const createFollow = catchAsync(async (req, res) => {
     const { userId } = req.user;
-    const freelancerUserId = req.body.freelancerUserId;
+    const followerUserId = req.body.followerUserId;
 
-  const result = await followService.createFollow(userId, freelancerUserId);
+  const result = await followService.createFollow(userId, followerUserId);
 
   sendResponse(res, {
     success: true,

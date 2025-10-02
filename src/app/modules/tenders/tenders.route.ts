@@ -21,6 +21,7 @@ tenderRoutes
 
   .get('', tenderController.getAllTender)
   .get('/me', auth(USER_ROLE.CLIENT), tenderController.getAllTenderByClient)
+  .get('/me/public/:id', tenderController.getAllPublicTenderByClient)
   .get('/running-tenders/:clientId', 
      tenderController.getAllRunningTender)
   .get('/:id', tenderController.getSingleTender)

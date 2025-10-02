@@ -28,6 +28,7 @@ postRouter
   //   postController.createPostHighlight,
   // )
   .get('/me', auth(USER_ROLE.CLIENT), postController.getAllPost)
+  .get('/me/public/:id', postController.getAllPublicPost)
   .get('/:id', postController.getSinglePost)
   .patch('/:id', auth(USER_ROLE.CLIENT), uploads.fields([{ name: 'image', maxCount: 1 }]), postController.updateSinglePost)
 
